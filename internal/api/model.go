@@ -5,4 +5,5 @@ type NewMonitor struct {
 	Connection     string `json:"connection" binding:"required"`
 	ConnectionType int    `json:"connectionType" binding:"min=0"`
 	Interval       int    `json:"interval" binding:"required"`
+	AlwaysSave     *bool  `json:"alwaysSave" binding:"required"`
 }

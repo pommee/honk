@@ -176,7 +176,7 @@ async function PutRequest(
   }
 }
 
-async function DeleteRequest(
+export async function DeleteRequest(
   url: string,
   body: unknown,
   ignoreError?: boolean

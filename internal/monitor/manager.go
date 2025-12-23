@@ -46,7 +46,7 @@ func NewManager(db *gorm.DB) *Manager {
 
 func (m *Manager) loadMonitorsFromDB() {
 	var dbMonitors []database.Monitor
-	if err := m.db.Find(&dbMonitors).Error; err != nil {
+	if err := m.db.Preload("Checks").Find(&dbMonitors).Error; err != nil {
 		logger.Error("failed to load monitors from database: %v", err)
 		return
 	}
@@ -78,6 +78,12 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 		return fmt.Errorf("no handler for connection type %d", mon.ConnectionType)
 	}
 
+	for _, existingMon := range m.monitors {
+		if existingMon.Connection == mon.Connection {
+			return fmt.Errorf("There is already a monitor for %s", mon.Connection)
+		}
+	}
+
 	m.db.Create(&mon)
 
 	m.monitors[mon.Name] = mon
@@ -88,13 +94,14 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 }
 
 func (m *Manager) GetMonitor(name string) *database.Monitor {
-	for _, monitor := range m.monitors {
-		if monitor.Name == name {
-			return monitor
+	var mon database.Monitor
+	if err := m.db.Preload("Checks").Where("name = ?", name).First(&mon).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil
 		}
+		return nil
 	}
-
-	return nil
+	return &mon
 }
 
 func (m *Manager) ListMonitors() map[string]*database.Monitor {
@@ -104,7 +111,20 @@ func (m *Manager) ListMonitors() map[string]*database.Monitor {
 func (m *Manager) RemoveMonitor(name string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	mon, exists := m.monitors[name]
+	if !exists {
+		return
+	}
+
 	delete(m.monitors, name)
+
+	if err := m.db.Delete(mon).Error; err != nil {
+		logger.Error("failed to delete monitor from database: %v", err)
+		return
+	}
+
+	logger.Info("Monitor %q removed", name)
 }
 
 func (m *Manager) startMonitor(mon *database.Monitor) {
@@ -138,21 +158,11 @@ func (m *Manager) runCheck(mon *database.Monitor) {
 		return
 	}
 
+	start := time.Now()
 	err := handler.Check(m.ctx, mon)
 
-	// Update monitor fields in memory
-	mon.Checked = time.Now()
+	mon.Checked = start
 	mon.Healthy = err == nil
-	if err != nil {
-		mon.Err = err.Error()
-		m.db.Create(&database.MonitorError{
-			Created: time.Now(),
-			Err:     mon.Err,
-		})
-	} else {
-		mon.Err = ""
-	}
-
 	mon.TotalChecks++
 	if mon.Healthy {
 		mon.SuccessfulChecks++
@@ -162,8 +172,25 @@ func (m *Manager) runCheck(mon *database.Monitor) {
 		mon.Uptime = (float32(mon.SuccessfulChecks) / float32(mon.TotalChecks)) * 100
 	}
 
+	if err != nil {
+		mon.Err = err.Error()
+	} else {
+		mon.Err = ""
+	}
+
+	check := &database.MonitorCheck{
+		MonitorID: mon.ID,
+		Created:   start,
+		Success:   mon.Healthy,
+		Err:       mon.Err,
+	}
+
+	if err := m.db.Create(check).Error; err != nil {
+		logger.Error("failed to save monitor check: %v", err)
+	}
+
 	if err := m.db.Save(mon).Error; err != nil {
-		logger.Error("failed to update monitor in database: %v", err)
+		logger.Error("failed to update monitor: %v", err)
 	}
 }
 

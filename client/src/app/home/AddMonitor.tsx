@@ -24,6 +24,8 @@ import { PostRequest } from "@/util";
 import { toast } from "sonner";
 import { MonitorType, MonitorTypeMap } from "@/constant";
 import { Monitor } from "@/types";
+import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface AddMonitorModalProps {
   open: boolean;
@@ -40,6 +42,7 @@ export function AddMonitorModal({
   const [type, setType] = useState<MonitorType>("http");
   const [url, setUrl] = useState("");
   const [interval, setInterval] = useState("60");
+  const [alwaysSave, setAlwaysSave] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +52,8 @@ export function AddMonitorModal({
       name: name.trim() || url,
       connection: url.trim(),
       connectionType: MonitorTypeMap[type],
-      interval: parseInt(interval, 10)
+      interval: parseInt(interval, 10),
+      alwaysSave: alwaysSave
     };
 
     try {
@@ -68,6 +72,7 @@ export function AddMonitorModal({
         healthy: false,
         uptime: 0,
         checked: "",
+        checks: [],
         error: ""
       });
 
@@ -80,7 +85,6 @@ export function AddMonitorModal({
       toast.success(`Monitor for ${monitor.name} was added!`);
     } catch (err) {
       console.error("Error creating monitor:", err);
-      toast.error("Failed to add monitor");
     }
   };
 
@@ -99,7 +103,7 @@ export function AddMonitorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-2/3">
+      <DialogContent className="w-1/3">
         <DialogHeader>
           <DialogTitle>Add New Monitor</DialogTitle>
           <DialogDescription>
@@ -169,22 +173,30 @@ export function AddMonitorModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="interval">Check Interval</Label>
-            <Select value={interval} onValueChange={setInterval}>
-              <SelectTrigger id="interval">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="20">20 seconds</SelectItem>
-                <SelectItem value="60">60 seconds (recommended)</SelectItem>
-                <SelectItem value="120">2 minutes</SelectItem>
-                <SelectItem value="300">5 minutes</SelectItem>
-                <SelectItem value="600">10 minutes</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Label htmlFor="interval" className="my-1">
+            Check Interval
+          </Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            How often the monitor checks the status.
+          </p>
+          <ToggleGroup
+            type="single"
+            variant={"outline"}
+            value={interval}
+            onValueChange={setInterval}
+          >
+            <ToggleGroupItem value="30">30s</ToggleGroupItem>
+            <ToggleGroupItem value="60">60s</ToggleGroupItem>
+            <ToggleGroupItem value="120">2m</ToggleGroupItem>
+            <ToggleGroupItem value="300">5m</ToggleGroupItem>
+            <ToggleGroupItem value="600">10m</ToggleGroupItem>
+          </ToggleGroup>
 
+          <Label className="my-1">Always save response</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Setting this to true will save the response even when successful.
+          </p>
+          <Switch checked={alwaysSave} onCheckedChange={setAlwaysSave} />
           <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"

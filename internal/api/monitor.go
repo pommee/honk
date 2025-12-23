@@ -14,6 +14,8 @@ func (api *API) registerMonitorRoutes() {
 
 	api.routes.GET("/monitors", api.listMonitors)
 	api.routes.GET("/monitor/:name", api.getMonitor)
+
+	api.routes.DELETE("/monitor/:name", api.deleteMonitor)
 }
 
 func (api *API) createMonitor(c *gin.Context) {
@@ -31,6 +33,7 @@ func (api *API) createMonitor(c *gin.Context) {
 		ConnectionType: req.ConnectionType,
 		Connection:     req.Connection,
 		Interval:       req.Interval,
+		AlwaysSave:     *req.AlwaysSave,
 	})
 	if err != nil {
 		logger.Warning("Failed to add monitor: %v", err)
@@ -59,4 +62,11 @@ func (api *API) getMonitor(c *gin.Context) {
 
 func (api *API) listMonitors(c *gin.Context) {
 	c.JSON(http.StatusOK, api.Manager.ListMonitors())
+}
+
+func (api *API) deleteMonitor(c *gin.Context) {
+	name := c.Param("name")
+
+	api.Manager.RemoveMonitor(name)
+	c.Status(http.StatusOK)
 }

@@ -17,20 +17,6 @@ export default function Home() {
   const [selected, setSelected] = useState<Monitor | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const [code, response] = await GetRequest("monitors");
-      if (code !== 200) {
-        toast.error("Unable to fetch monitors");
-        return;
-      }
-
-      const mapped = Object.values(response).map(mapApiMonitor);
-      setMonitors(mapped);
-      setSelected(mapped[0] ?? null);
-    })();
-  }, []);
-
   const refreshMonitor = useCallback(async (name: string) => {
     const [code, response] = await GetRequest(`monitor/${name}`);
     if (code !== 200) return;
@@ -41,6 +27,24 @@ export default function Home() {
 
     setSelected((prev) => (prev?.name === name ? updated : prev));
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const [code, response] = await GetRequest("monitors");
+      if (code !== 200) {
+        toast.error("Unable to fetch monitors");
+        return;
+      }
+
+      const mapped = Object.values(response).map(mapApiMonitor);
+      setMonitors(mapped);
+
+      if (mapped.length > 0) {
+        setSelected(mapped[0]);
+        await refreshMonitor(mapped[0].name);
+      }
+    })();
+  }, [refreshMonitor]);
 
   useMonitorPolling({ monitors, refreshMonitor });
 
@@ -57,7 +61,13 @@ export default function Home() {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <MonitorDetail monitor={selected} />
+          <MonitorDetail
+            monitor={selected}
+            onDeleted={(name) => {
+              setMonitors((prev) => prev.filter((m) => m.name !== name));
+              if (selected?.name === name) setSelected(null);
+            }}
+          />
         </main>
       </div>
 

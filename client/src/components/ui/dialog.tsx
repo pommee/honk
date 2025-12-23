@@ -81,7 +81,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+export function DialogFooter({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-footer"
@@ -120,15 +123,4 @@ function DialogDescription({
   );
 }
 
-export {
-  Dialog,
-  
-  DialogContent,
-  DialogDescription,
-  
-  DialogHeader,
-  
-  
-  DialogTitle,
-  
-};
+export { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle };

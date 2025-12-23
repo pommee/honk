@@ -30,6 +30,6 @@ func Initialize() *gorm.DB {
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&Monitor{},
-		&MonitorError{},
+		&MonitorCheck{},
 	)
 }

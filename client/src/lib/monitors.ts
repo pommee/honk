@@ -9,5 +9,6 @@ export const mapApiMonitor = (data: any): Monitor => ({
   healthy: data.healthy,
   uptime: data.uptime,
   checked: data.checked ? new Date(data.checked).toLocaleString() : "never",
+  checks: data.checks,
   error: data.error || ""
 });

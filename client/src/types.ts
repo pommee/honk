@@ -1,3 +1,9 @@
+export interface Check {
+  created: string;
+  success: boolean;
+  error: string;
+}
+
 export interface Monitor {
   id: string;
   name: string;
@@ -7,5 +13,6 @@ export interface Monitor {
   healthy: boolean;
   uptime: number;
   checked: string;
+  checks: Check[];
   error: string;
 }

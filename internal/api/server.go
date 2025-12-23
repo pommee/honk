@@ -123,7 +123,7 @@ func (api *API) startServer(errorChannel chan struct{}) {
 	}
 
 	if serverIP, err := GetServerIP(); err == nil {
-		logger.Info(fmt.Sprintf("Web interface available at http://%s:%d", serverIP, api.Port))
+		logger.Info("Web interface available at http://%s:%d", serverIP, api.Port)
 	} else {
 		logger.Info("Web server started on port :%d", api.Port)
 	}
@@ -203,11 +203,6 @@ func (api *API) serveIndexHTML(content embed.FS, ipAddress string) {
 
 	api.router.GET("/", handleIndexHTML)
 	api.router.NoRoute(handleIndexHTML)
-}
-
-func (api *API) error(c *gin.Context, code int, message string) {
-	c.JSON(code, gin.H{"error": message})
-	return
 }
 
 func injectServerConfig(htmlContent, serverIP string, port int) string {
