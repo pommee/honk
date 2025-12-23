@@ -148,13 +148,13 @@ func (m *Manager) ListMonitors() map[int]*database.Monitor {
 	return m.monitors
 }
 
-func (m *Manager) RemoveMonitor(id int) {
+func (m *Manager) RemoveMonitor(id int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	mon, exists := m.monitors[id]
 	if !exists {
-		return
+		return fmt.Errorf("Monitor with id %d does not exist", id)
 	}
 
 	if runner, exists := m.runners[id]; exists {
@@ -166,11 +166,11 @@ func (m *Manager) RemoveMonitor(id int) {
 	delete(m.monitors, id)
 
 	if err := m.db.Delete(mon).Error; err != nil {
-		logger.Error("failed to delete monitor from database: %v", err)
-		return
+		return fmt.Errorf("failed to delete monitor from database: %v", err)
 	}
 
 	logger.Info("Monitor %q removed", mon.Name)
+	return nil
 }
 
 func (m *Manager) startMonitor(monID int) {

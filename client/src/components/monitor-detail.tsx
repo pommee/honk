@@ -258,9 +258,13 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <code className="flex-1 rounded-lg bg-muted px-4 py-3 text-sm font-mono break-all">
+              <a
+                href={monitor.connection}
+                target="#"
+                className="flex-1 text-blue-400 underline text-sm font-mono"
+              >
                 {monitor.connection}
-              </code>
+              </a>
               <Button
                 variant="outline"
                 size="icon"

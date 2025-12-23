@@ -11,21 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { Globe, Activity, Server } from "lucide-react";
-import { ShippingContainerIcon } from "@phosphor-icons/react";
 import { PostRequest } from "@/util";
 import { toast } from "sonner";
 import { MonitorType, MonitorTypeMap } from "@/constant";
 import { Monitor } from "@/types";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AddMonitorModalProps {
   open: boolean;
@@ -125,79 +117,81 @@ export function AddMonitorModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="type">Monitor Type</Label>
-            <Select value={type} onValueChange={(v) => setType(v as any)}>
-              <SelectTrigger id="type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="http">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    HTTP(s) / Website
-                  </div>
-                </SelectItem>
-                <SelectItem value="ping">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4" />
-                    Ping
-                  </div>
-                </SelectItem>
-                <SelectItem value="container">
-                  <div className="flex items-center gap-2">
-                    <ShippingContainerIcon className="h-4 w-4" />
-                    Container
-                  </div>
-                </SelectItem>{" "}
-                <SelectItem value="tcp">
-                  <div className="flex items-center gap-2">
-                    <Server className="h-4 w-4" />
-                    TCP Port
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <Tabs defaultValue="http" className="w-[400px]">
+              <TabsList className="bg-transparent space-x-2 mb-2">
+                <TabsTrigger
+                  value="http"
+                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                >
+                  http(s)
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ping"
+                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                >
+                  ping
+                </TabsTrigger>
+                <TabsTrigger
+                  value="container"
+                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                >
+                  container
+                </TabsTrigger>
+                <TabsTrigger
+                  value="tcp"
+                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                >
+                  tcp
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="http">
+                <div className="space-y-2">
+                  <Label htmlFor="url">
+                    {type === "http" && "URL"}
+                    {type === "ping" && "Hostname / IP"}
+                    {type === "tcp" && "Host:Port"}
+                  </Label>
+                  <Input
+                    id="url"
+                    placeholder={getPlaceholder()}
+                    required
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                  />
+                </div>
+                <Label htmlFor="interval" className="my-1">
+                  Check Interval
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  How often the monitor checks the status.
+                </p>
+                <ToggleGroup
+                  type="single"
+                  variant={"outline"}
+                  value={interval}
+                  onValueChange={setInterval}
+                >
+                  <ToggleGroupItem value="30">30s</ToggleGroupItem>
+                  <ToggleGroupItem value="60">60s</ToggleGroupItem>
+                  <ToggleGroupItem value="120">2m</ToggleGroupItem>
+                  <ToggleGroupItem value="300">5m</ToggleGroupItem>
+                  <ToggleGroupItem value="600">10m</ToggleGroupItem>
+                </ToggleGroup>
+                <Label className="my-1">Always save response</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Setting this to true will save the response even when
+                  successful.
+                </p>
+                <Switch checked={alwaysSave} onCheckedChange={setAlwaysSave} />{" "}
+              </TabsContent>
+              <TabsContent value="ping">Change your password here.</TabsContent>
+              <TabsContent value="container">
+                Change your password here.
+              </TabsContent>
+              <TabsContent value="tcp">Change your password here.</TabsContent>
+            </Tabs>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="url">
-              {type === "http" && "URL"}
-              {type === "ping" && "Hostname / IP"}
-              {type === "tcp" && "Host:Port"}
-            </Label>
-            <Input
-              id="url"
-              placeholder={getPlaceholder()}
-              required
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
-
-          <Label htmlFor="interval" className="my-1">
-            Check Interval
-          </Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            How often the monitor checks the status.
-          </p>
-          <ToggleGroup
-            type="single"
-            variant={"outline"}
-            value={interval}
-            onValueChange={setInterval}
-          >
-            <ToggleGroupItem value="30">30s</ToggleGroupItem>
-            <ToggleGroupItem value="60">60s</ToggleGroupItem>
-            <ToggleGroupItem value="120">2m</ToggleGroupItem>
-            <ToggleGroupItem value="300">5m</ToggleGroupItem>
-            <ToggleGroupItem value="600">10m</ToggleGroupItem>
-          </ToggleGroup>
-
-          <Label className="my-1">Always save response</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Setting this to true will save the response even when successful.
-          </p>
-          <Switch checked={alwaysSave} onCheckedChange={setAlwaysSave} />
           <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"

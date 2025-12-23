@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"honk/internal/database"
 
@@ -17,7 +18,7 @@ func (api *API) registerMonitorRoutes() {
 
 	api.routes.PUT("/monitor/:name", api.updateMonitor)
 
-	api.routes.DELETE("/monitor/:name", api.deleteMonitor)
+	api.routes.DELETE("/monitor/:id", api.deleteMonitor)
 }
 
 func (api *API) createMonitor(c *gin.Context) {
@@ -96,8 +97,19 @@ func (api *API) listMonitors(c *gin.Context) {
 }
 
 func (api *API) deleteMonitor(c *gin.Context) {
-	id := c.GetInt("id")
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor id"})
+		return
+	}
 
-	api.Manager.RemoveMonitor(id)
+	err = api.Manager.RemoveMonitor(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+		return
+	}
 	c.Status(http.StatusOK)
 }
