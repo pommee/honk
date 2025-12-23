@@ -14,7 +14,7 @@ import (
 var logger = internal.GetLogger()
 
 type Handler interface {
-	Check(ctx context.Context, m *database.Monitor) error
+	Check(ctx context.Context, m *database.Monitor) (string, error)
 }
 
 type monitorRunner struct {
@@ -227,7 +227,7 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	}
 
 	start := time.Now()
-	err := handler.Check(ctx, mon)
+	response, err := handler.Check(ctx, mon)
 
 	mon.Checked = start
 	mon.Healthy = err == nil
@@ -240,17 +240,11 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		mon.Uptime = (float32(mon.SuccessfulChecks) / float32(mon.TotalChecks)) * 100
 	}
 
-	if err != nil {
-		mon.Err = err.Error()
-	} else {
-		mon.Err = ""
-	}
-
 	check := &database.MonitorCheck{
 		MonitorID: mon.ID,
 		Created:   start,
 		Success:   mon.Healthy,
-		Err:       mon.Err,
+		Result:    response,
 	}
 
 	if err := m.db.Create(check).Error; err != nil {

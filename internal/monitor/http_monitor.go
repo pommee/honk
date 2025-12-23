@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"honk/internal/database"
+	"io"
 	"net/http"
 	"time"
 )
@@ -20,22 +21,31 @@ func NewHTTPPingHandler(timeout time.Duration) *HTTPPingHandler {
 	}
 }
 
-func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) error {
+func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, m.Connection, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	logger.Debug("HTTP handler '%s' sending request for %s", m.Name, m.Connection)
 	resp, err := h.Client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("http status %d", resp.StatusCode)
+		return "", fmt.Errorf("http status %d", resp.StatusCode)
 	}
 
-	return nil
+	if m.AlwaysSave {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Warning("Could not read request body from successful request: %v", err)
+		}
+
+		return string(bodyBytes), nil
+	}
+
+	return "", nil
 }

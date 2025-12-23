@@ -1,7 +1,7 @@
 export interface Check {
   created: string;
   success: boolean;
-  error: string;
+  result: string;
 }
 
 export interface Monitor {
@@ -15,5 +15,4 @@ export interface Monitor {
   alwaysSave: boolean;
   checked: string;
   checks: Check[];
-  error: string;
 }

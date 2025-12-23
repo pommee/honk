@@ -129,12 +129,25 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
             )}
           </div>
           <div className="text-muted-foreground">
-            {new Date(check.created || check.timestamp).toLocaleString()}
+            {new Date(check.created).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false
+            })}
           </div>
-          {!check.success && check.err && (
+          {check.err && (
             <div className="mt-2 pt-2 border-t">
-              <span className="font-medium text-red-600">Error:</span>{" "}
+              <span className="font-medium text-red-600">Error:</span>
               <span className="text-muted-foreground">{check.err}</span>
+            </div>
+          )}
+          {!check.err && check.result && (
+            <div className="mt-2 pt-2 border-t">
+              <span className="font-medium">Response:</span>
+              <span className="text-muted-foreground">{check.result}</span>
             </div>
           )}
         </div>
@@ -285,7 +298,7 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
                     id: idx,
                     y: 0,
                     success: check.success,
-                    err: check.error || "",
+                    result: check.result || "",
                     created: check.created
                   }))}
                 >

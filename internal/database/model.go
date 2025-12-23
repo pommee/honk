@@ -12,7 +12,7 @@ type Monitor struct {
 	AlwaysSave     bool      `json:"alwaysSave"`
 	Uptime         float32   `json:"uptime"`
 	Checked        time.Time `json:"checked,omitzero"`
-	Err            string    `json:"error"`
+	Result         string    `json:"result"`
 
 	TotalChecks      int `json:"-"`
 	SuccessfulChecks int `json:"-"`
@@ -25,7 +25,7 @@ type MonitorCheck struct {
 	MonitorID uint      `gorm:"index;not null" json:"-"`
 	Created   time.Time `json:"created"`
 	Success   bool      `json:"success"`
-	Err       string    `json:"error,omitempty"`
+	Result    string    `json:"result,omitempty"`
 
 	Monitor Monitor `gorm:"foreignKey:MonitorID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 }

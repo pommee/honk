@@ -24,15 +24,15 @@ func NewContainerHandler() (*ContainerHandler, error) {
 	return &ContainerHandler{cli: cli}, nil
 }
 
-func (h *ContainerHandler) Check(ctx context.Context, m *database.Monitor) error {
+func (h *ContainerHandler) Check(ctx context.Context, m *database.Monitor) (string, error) {
 	inspect, err := h.cli.ContainerInspect(ctx, m.Connection)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if !inspect.State.Running {
-		return fmt.Errorf("container %s not running", m.Connection)
+		return "", fmt.Errorf("container %s not running", m.Connection)
 	}
 
-	return nil
+	return "", nil
 }
