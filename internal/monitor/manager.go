@@ -134,11 +134,11 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 
 func (m *Manager) GetMonitor(name string) *database.Monitor {
 	var mon database.Monitor
-	if err := m.db.Preload("Checks").Where("name = ?", name).First(&mon).Error; err != nil {
+	err := m.db.Preload("Checks").Where("name = ?", name).First(&mon).Error
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil
 		}
-		logger.Error("failed to fetch monitor: %v", err)
 		return nil
 	}
 	return &mon

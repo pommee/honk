@@ -31,12 +31,12 @@ export const connectionTypeIcon = (type: number) => {
 
 export const StatusBadge = ({ healthy }: { healthy: boolean }) =>
   healthy ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800">
+    <span className="inline-flex items-center gap-1 h-fit rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-muted">
       <CheckCircle2 className="h-3 w-3" />
       Up
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">
+    <span className="inline-flex items-center gap-1 h-fit rounded-full bg-red-500 px-2.5 py-1 text-xs font-medium text-muted">
       <XCircle className="h-3 w-3" />
       Down
     </span>

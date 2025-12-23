@@ -17,7 +17,7 @@ export const MonitorSidebar = ({
   onSelect,
   onAdd
 }: Props) => (
-  <aside className="w-80 border-r flex flex-col">
+  <aside className="w-xs border-r flex flex-col">
     <div className="border-b p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Monitors</h2>
