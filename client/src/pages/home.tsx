@@ -10,7 +10,7 @@ import { mapApiMonitor } from "@/lib/monitors";
 import { useMonitorPolling } from "@/hooks/useMonitorPolling";
 import { MonitorSidebar } from "@/components/monitor-sidebar";
 import { Monitor } from "@/types";
-import { MonitorDetail } from "@/components/monitor-detaii";
+import { MonitorDetail } from "@/components/monitor-detail";
 
 export default function Home() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);

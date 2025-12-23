@@ -179,10 +179,8 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
               <div className="p-2 bg-muted rounded-lg">
                 {connectionTypeIcon(monitor.connectionType)}
               </div>
-              <span className="text-2xl font-semibold capitalize">
-                {connectionTypeLabel(monitor.connectionType) === "http"
-                  ? "HTTP(S)"
-                  : connectionTypeLabel(monitor.connectionType)}
+              <span className="text-2xl font-semibold">
+                {connectionTypeLabel(monitor.connectionType)}
               </span>
             </CardContent>
           </Card>

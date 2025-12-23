@@ -93,6 +93,22 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 	return nil
 }
 
+func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if err := m.db.Save(mon).Error; err != nil {
+		return err
+	}
+
+	m.monitors[mon.Name] = mon
+
+	m.startMonitor(mon)
+
+	logger.Info("Monitor updated!")
+	return nil
+}
+
 func (m *Manager) GetMonitor(name string) *database.Monitor {
 	var mon database.Monitor
 	if err := m.db.Preload("Checks").Where("name = ?", name).First(&mon).Error; err != nil {

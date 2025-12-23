@@ -15,6 +15,8 @@ func (api *API) registerMonitorRoutes() {
 	api.routes.GET("/monitors", api.listMonitors)
 	api.routes.GET("/monitor/:name", api.getMonitor)
 
+	api.routes.PUT("/monitor/:name", api.updateMonitor)
+
 	api.routes.DELETE("/monitor/:name", api.deleteMonitor)
 }
 
@@ -58,6 +60,34 @@ func (api *API) getMonitor(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, monitor)
+}
+
+func (api *API) updateMonitor(c *gin.Context) {
+	var req NewMonitor
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warning("Invalid monitor payload: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	err := api.Manager.AddMonitor(&database.Monitor{
+		Name:           req.Name,
+		ConnectionType: req.ConnectionType,
+		Connection:     req.Connection,
+		Interval:       req.Interval,
+		AlwaysSave:     *req.AlwaysSave,
+	})
+	if err != nil {
+		logger.Warning("Failed to add monitor: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (api *API) listMonitors(c *gin.Context) {
