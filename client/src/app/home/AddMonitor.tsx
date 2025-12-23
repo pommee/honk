@@ -64,12 +64,13 @@ export function AddMonitorModal({
       }
 
       onAddMonitor?.({
-        id: response?.id || crypto.randomUUID(),
+        id: response?.id || null,
         name: monitor.name,
         connection: monitor.connection,
         connectionType: monitor.connectionType,
         interval: monitor.interval,
         healthy: false,
+        alwaysSave: monitor.alwaysSave ?? false,
         uptime: 0,
         checked: "",
         checks: [],

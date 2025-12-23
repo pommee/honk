@@ -3,7 +3,7 @@ package database
 import "time"
 
 type Monitor struct {
-	ID             uint      `gorm:"primaryKey;autoIncrement" json:"-"`
+	ID             uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name           string    `json:"name"`
 	Connection     string    `json:"connection"`
 	ConnectionType int       `json:"connectionType"`

@@ -7,3 +7,8 @@ type NewMonitor struct {
 	Interval       int    `json:"interval" binding:"required"`
 	AlwaysSave     *bool  `json:"alwaysSave" binding:"required"`
 }
+
+type UpdateMonitor struct {
+	ID int `json:"id"`
+	NewMonitor
+}

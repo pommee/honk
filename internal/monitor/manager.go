@@ -17,10 +17,16 @@ type Handler interface {
 	Check(ctx context.Context, m *database.Monitor) error
 }
 
+type monitorRunner struct {
+	cancel context.CancelFunc
+	done   chan struct{}
+}
+
 type Manager struct {
 	db       *gorm.DB
 	mu       sync.Mutex
-	monitors map[string]*database.Monitor
+	monitors map[int]*database.Monitor
+	runners  map[int]*monitorRunner
 	handlers map[ConnectionType]Handler
 
 	ctx    context.Context
@@ -33,7 +39,8 @@ func NewManager(db *gorm.DB) *Manager {
 
 	mgr := &Manager{
 		db:       db,
-		monitors: make(map[string]*database.Monitor),
+		monitors: make(map[int]*database.Monitor),
+		runners:  make(map[int]*monitorRunner),
 		handlers: make(map[ConnectionType]Handler),
 		ctx:      ctx,
 		cancel:   cancel,
@@ -53,8 +60,8 @@ func (m *Manager) loadMonitorsFromDB() {
 
 	for i := range dbMonitors {
 		mon := &dbMonitors[i]
-		m.monitors[mon.Name] = mon
-		m.startMonitor(mon)
+		m.monitors[int(mon.ID)] = mon
+		m.startMonitor(int(mon.ID))
 	}
 
 	logger.Info("%d monitors loaded from database", len(dbMonitors))
@@ -70,7 +77,7 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, exists := m.monitors[mon.Name]; exists {
+	if _, exists := m.monitors[int(mon.ID)]; exists {
 		return fmt.Errorf("monitor %q already exists", mon.Name)
 	}
 
@@ -86,8 +93,8 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 
 	m.db.Create(&mon)
 
-	m.monitors[mon.Name] = mon
-	m.startMonitor(mon)
+	m.monitors[int(mon.ID)] = mon
+	m.startMonitor(int(mon.ID))
 
 	logger.Info("A new monitor was added!")
 	return nil
@@ -95,17 +102,33 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 
 func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	existing, exists := m.monitors[int(mon.ID)]
+	if !exists {
+		m.mu.Unlock()
+		return fmt.Errorf("monitor %d does not exist", mon.ID)
+	}
 
-	if err := m.db.Save(mon).Error; err != nil {
+	if runner, exists := m.runners[int(mon.ID)]; exists {
+		runner.cancel()
+		<-runner.done
+		delete(m.runners, int(mon.ID))
+	}
+
+	existing.Name = mon.Name
+	existing.Connection = mon.Connection
+	existing.Interval = mon.Interval
+	existing.AlwaysSave = mon.AlwaysSave
+	existing.ConnectionType = mon.ConnectionType
+
+	m.mu.Unlock()
+
+	if err := m.db.Save(existing).Error; err != nil {
 		return err
 	}
 
-	m.monitors[mon.Name] = mon
+	m.startMonitor(int(existing.ID))
 
-	m.startMonitor(mon)
-
-	logger.Info("Monitor updated!")
+	logger.Info("Monitor '%s' updated", existing.Name)
 	return nil
 }
 
@@ -115,58 +138,87 @@ func (m *Manager) GetMonitor(name string) *database.Monitor {
 		if err == gorm.ErrRecordNotFound {
 			return nil
 		}
+		logger.Error("failed to fetch monitor: %v", err)
 		return nil
 	}
 	return &mon
 }
 
-func (m *Manager) ListMonitors() map[string]*database.Monitor {
+func (m *Manager) ListMonitors() map[int]*database.Monitor {
 	return m.monitors
 }
 
-func (m *Manager) RemoveMonitor(name string) {
+func (m *Manager) RemoveMonitor(id int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	mon, exists := m.monitors[name]
+	mon, exists := m.monitors[id]
 	if !exists {
 		return
 	}
 
-	delete(m.monitors, name)
+	if runner, exists := m.runners[id]; exists {
+		runner.cancel()
+		<-runner.done
+		delete(m.runners, id)
+	}
+
+	delete(m.monitors, id)
 
 	if err := m.db.Delete(mon).Error; err != nil {
 		logger.Error("failed to delete monitor from database: %v", err)
 		return
 	}
 
-	logger.Info("Monitor %q removed", name)
+	logger.Info("Monitor %q removed", mon.Name)
 }
 
-func (m *Manager) startMonitor(mon *database.Monitor) {
+func (m *Manager) startMonitor(monID int) {
+	ctx, cancel := context.WithCancel(m.ctx)
+	done := make(chan struct{})
+
+	m.runners[monID] = &monitorRunner{
+		cancel: cancel,
+		done:   done,
+	}
+
 	m.wg.Add(1)
 
 	go func() {
 		defer m.wg.Done()
+		defer close(done)
 
-		m.runCheck(mon)
+		m.runCheck(ctx, monID)
+
+		m.mu.Lock()
+		mon := m.monitors[monID]
+		m.mu.Unlock()
+
+		if mon == nil {
+			return
+		}
 
 		ticker := time.NewTicker(time.Duration(mon.Interval) * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
-			case <-m.ctx.Done():
+			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				m.runCheck(mon)
+				m.runCheck(ctx, monID)
 			}
 		}
 	}()
 }
 
-func (m *Manager) runCheck(mon *database.Monitor) {
+func (m *Manager) runCheck(ctx context.Context, monID int) {
 	m.mu.Lock()
+	mon := m.monitors[monID]
+	if mon == nil {
+		m.mu.Unlock()
+		return
+	}
 	handler := m.handlers[ConnectionType(mon.ConnectionType)]
 	m.mu.Unlock()
 
@@ -175,7 +227,7 @@ func (m *Manager) runCheck(mon *database.Monitor) {
 	}
 
 	start := time.Now()
-	err := handler.Check(m.ctx, mon)
+	err := handler.Check(ctx, mon)
 
 	mon.Checked = start
 	mon.Healthy = err == nil

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, Copy, AlertCircle } from "lucide-react";
@@ -9,7 +9,7 @@ import {
 } from "@/lib/monitor-ui";
 import { Monitor } from "@/types";
 import { toast } from "sonner";
-import { DeleteRequest } from "@/util";
+import { DeleteRequest, PutRequest } from "@/util";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,8 @@ import {
   Tooltip,
   Cell
 } from "recharts";
+import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
 
 interface Props {
   monitor: Monitor | null;
@@ -36,6 +38,27 @@ interface Props {
 export function MonitorDetail({ monitor, onDeleted }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const [form, setForm] = useState({
+    id: monitor?.id,
+    name: monitor?.name ?? "",
+    connection: monitor?.connection ?? "",
+    interval: monitor?.interval ?? 60,
+    alwaysSave: monitor?.alwaysSave ?? false
+  });
+
+  useEffect(() => {
+    if (!monitor) return;
+    setForm({
+      id: monitor.id,
+      name: monitor.name,
+      connection: monitor.connection,
+      interval: monitor.interval,
+      alwaysSave: monitor.alwaysSave
+    });
+  }, [monitor]);
 
   const handleDelete = async () => {
     if (!monitor) return;
@@ -43,7 +66,7 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
     setIsDeleting(true);
     try {
       const [code, response] = await DeleteRequest(
-        `monitor/${encodeURIComponent(monitor.name)}`,
+        `monitor/${encodeURIComponent(monitor.id)}`,
         null
       );
 
@@ -62,6 +85,30 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
     }
   };
 
+  const handleUpdate = async () => {
+    if (!monitor) return;
+
+    setIsUpdating(true);
+    try {
+      const [code, response] = await PutRequest(
+        `monitor/${encodeURIComponent(monitor.name)}`,
+        form
+      );
+
+      if (code !== 200) {
+        const text = await response.error;
+        throw new Error(text || "Failed to update monitor");
+      }
+
+      toast.success("Monitor updated successfully");
+      setIsEditModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update monitor");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const copyTarget = () => {
     if (monitor?.connection) {
       navigator.clipboard.writeText(monitor.connection);
@@ -76,9 +123,9 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
         <div className="bg-background border rounded-lg shadow-xl p-4 text-sm">
           <div className="font-medium mb-2">
             {check.success ? (
-              <span className="text-green-600">✓ Success</span>
+              <span className="text-green-500">✓ Success</span>
             ) : (
-              <span className="text-red-600">✗ Failed</span>
+              <span className="text-red-500">✗ Failed</span>
             )}
           </div>
           <div className="text-muted-foreground">
@@ -126,7 +173,11 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
               </div>
             </div>
             <div className="flex gap-3">
-              <Button size="lg" variant="outline">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setIsEditModalOpen(true)}
+              >
                 Edit Monitor
               </Button>
               <Button
@@ -286,6 +337,86 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
                 disabled={isDeleting}
               >
                 {isDeleting ? "Deleting..." : "Yes, Delete Monitor"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Monitor</DialogTitle>
+              <DialogDescription>
+                Update the monitor configuration. Changes apply immediately.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <input
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Target URL</label>
+                <input
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 font-mono"
+                  value={form.connection}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, connection: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">
+                  Check Interval (seconds)
+                </label>
+                <input
+                  type="number"
+                  min={5}
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2"
+                  value={form.interval}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      interval: Number(e.target.value)
+                    }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label className="my-1">Always save response</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Setting this to true will save the response even when
+                  successful.
+                </p>
+                <Switch
+                  checked={form.alwaysSave}
+                  onCheckedChange={(checked) =>
+                    setForm((f) => ({ ...f, alwaysSave: checked }))
+                  }
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                disabled={isUpdating}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdate} disabled={isUpdating}>
+                {isUpdating ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </DialogContent>

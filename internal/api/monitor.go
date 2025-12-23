@@ -54,7 +54,7 @@ func (api *API) getMonitor(c *gin.Context) {
 	monitor := api.Manager.GetMonitor(name)
 	if monitor == nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "monitor not found",
+			"error": fmt.Sprintf("monitor with name '%s' not found", name),
 		})
 		return
 	}
@@ -63,7 +63,7 @@ func (api *API) getMonitor(c *gin.Context) {
 }
 
 func (api *API) updateMonitor(c *gin.Context) {
-	var req NewMonitor
+	var req UpdateMonitor
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warning("Invalid monitor payload: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -72,7 +72,8 @@ func (api *API) updateMonitor(c *gin.Context) {
 		return
 	}
 
-	err := api.Manager.AddMonitor(&database.Monitor{
+	err := api.Manager.UpdateMonitor(&database.Monitor{
+		ID:             uint(req.ID),
 		Name:           req.Name,
 		ConnectionType: req.ConnectionType,
 		Connection:     req.Connection,
@@ -80,7 +81,7 @@ func (api *API) updateMonitor(c *gin.Context) {
 		AlwaysSave:     *req.AlwaysSave,
 	})
 	if err != nil {
-		logger.Warning("Failed to add monitor: %v", err)
+		logger.Warning("Failed to update monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("%v", err),
 		})
@@ -95,8 +96,8 @@ func (api *API) listMonitors(c *gin.Context) {
 }
 
 func (api *API) deleteMonitor(c *gin.Context) {
-	name := c.Param("name")
+	id := c.GetInt("id")
 
-	api.Manager.RemoveMonitor(name)
+	api.Manager.RemoveMonitor(id)
 	c.Status(http.StatusOK)
 }

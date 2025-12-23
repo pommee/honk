@@ -139,7 +139,7 @@ async function PatchRequest(url: string, ignoreError?: boolean) {
   }
 }
 
-async function PutRequest(
+export async function PutRequest(
   url: string,
   bodyData: unknown,
   ignoreError?: boolean

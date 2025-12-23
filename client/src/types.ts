@@ -5,13 +5,14 @@ export interface Check {
 }
 
 export interface Monitor {
-  id: string;
+  id: number;
   name: string;
   connection: string;
   connectionType: number;
   interval: number;
   healthy: boolean;
   uptime: number;
+  alwaysSave: boolean;
   checked: string;
   checks: Check[];
   error: string;
