@@ -162,11 +162,9 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 
 func (m *Manager) GetMonitor(id int) *database.Monitor {
 	var mon database.Monitor
-	err := m.db.Preload(clause.Associations).Where("id = ?", id).First(&mon).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil
-		}
+	result := m.db.Preload(clause.Associations).Where("id = ?", id).Find(&mon)
+
+	if result.RowsAffected == 0 {
 		return nil
 	}
 	return &mon
