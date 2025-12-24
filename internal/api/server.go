@@ -35,7 +35,6 @@ type API struct {
 	Port           int
 
 	Manager *monitor.Manager
-	Client  *internal.DockerClient
 }
 
 func (api *API) Start(content embed.FS, errorChannel chan struct{}) {
@@ -84,7 +83,6 @@ func (api *API) configureCORS() {
 
 func (api *API) setupRoutes() {
 	api.registerMonitorRoutes()
-	api.registerContainerRoutes()
 }
 
 func (api *API) setupAuthAndMiddleware() {

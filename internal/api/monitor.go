@@ -32,6 +32,7 @@ func (api *API) createMonitor(c *gin.Context) {
 	}
 
 	err := api.Manager.AddMonitor(&database.Monitor{
+		Enabled:        *req.Enabled,
 		Name:           req.Name,
 		ConnectionType: req.ConnectionType,
 		Connection:     req.Connection,
@@ -77,6 +78,7 @@ func (api *API) updateMonitor(c *gin.Context) {
 
 	err := api.Manager.UpdateMonitor(&database.Monitor{
 		ID:             uint(req.ID),
+		Enabled:        *req.Enabled,
 		Name:           req.Name,
 		ConnectionType: req.ConnectionType,
 		Connection:     req.Connection,

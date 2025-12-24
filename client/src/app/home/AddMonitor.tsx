@@ -35,6 +35,7 @@ export function AddMonitorModal({
   const [type, setType] = useState<MonitorType>("http");
   const [url, setUrl] = useState("");
   const [interval, setInterval] = useState("60");
+  const [enabled, setEnabled] = useState(true);
   const [alwaysSave, setAlwaysSave] = useState(false);
   const [webhook, setWebhook] = useState("");
 
@@ -43,6 +44,7 @@ export function AddMonitorModal({
     if (!url.trim()) return;
 
     const monitorPayload = {
+      enabled: enabled,
       name: name.trim() || url,
       connection: url.trim(),
       connectionType: MonitorTypeMap[type],
@@ -62,6 +64,7 @@ export function AddMonitorModal({
 
       const newMonitor: Monitor = {
         id: response?.id || null,
+        enabled: monitorPayload.enabled,
         name: monitorPayload.name,
         connection: monitorPayload.connection,
         connectionType: monitorPayload.connectionType,
@@ -184,6 +187,20 @@ export function AddMonitorModal({
               <ToggleGroupItem value="300">5m</ToggleGroupItem>
               <ToggleGroupItem value="600">10m</ToggleGroupItem>
             </ToggleGroup>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="enabled"
+              checked={enabled}
+              onCheckedChange={setEnabled}
+            />
+            <Label
+              htmlFor="enabled"
+              className="text-sm font-medium leading-none"
+            >
+              Enable monitor
+            </Label>
           </div>
 
           <div className="flex items-center space-x-2">

@@ -13,6 +13,7 @@ export interface Check {
 
 export interface Monitor {
   id: number;
+  enabled: boolean;
   name: string;
   connection: string;
   connectionType: number;

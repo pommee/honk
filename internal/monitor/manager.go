@@ -115,6 +115,7 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 		delete(m.runners, int(mon.ID))
 	}
 
+	existing.Enabled = mon.Enabled
 	existing.Name = mon.Name
 	existing.Connection = mon.Connection
 	existing.Interval = mon.Interval
@@ -245,6 +246,17 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		m.mu.Unlock()
 		return
 	}
+
+	if !mon.Enabled {
+		mon.Healthy = nil
+
+		if err := m.db.Save(mon).Error; err != nil {
+			logger.Error("failed to update disabled monitor: %v", err)
+		}
+		m.mu.Unlock()
+		return
+	}
+
 	handler := m.handlers[ConnectionType(mon.ConnectionType)]
 	m.mu.Unlock()
 
@@ -256,9 +268,10 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	response, err := handler.Check(ctx, mon)
 
 	mon.Checked = start
-	mon.Healthy = err == nil
+	healthy := err == nil
+	mon.Healthy = &healthy // Set to pointer
 	mon.TotalChecks++
-	if mon.Healthy {
+	if *mon.Healthy {
 		mon.SuccessfulChecks++
 	}
 
@@ -269,7 +282,7 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	check := &database.MonitorCheck{
 		MonitorID: mon.ID,
 		Created:   start,
-		Success:   mon.Healthy,
+		Success:   *mon.Healthy,
 		Result:    response,
 	}
 

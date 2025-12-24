@@ -32,7 +32,11 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Warning("failed to close response body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode >= 400 {
 		return "", fmt.Errorf("http status %d", resp.StatusCode)

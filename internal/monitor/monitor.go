@@ -1,7 +1,5 @@
 package monitor
 
-import "honk/internal/database"
-
 type ConnectionType int
 
 const (
@@ -20,13 +18,4 @@ var connectionTypeName = map[ConnectionType]string{
 
 func (ct ConnectionType) String() string {
 	return connectionTypeName[ct]
-}
-
-func NewMonitor(name string, connectionType ConnectionType, connection string, interval int) *database.Monitor {
-	return &database.Monitor{
-		Name:           name,
-		ConnectionType: int(connectionType),
-		Connection:     connection,
-		Interval:       interval,
-	}
 }

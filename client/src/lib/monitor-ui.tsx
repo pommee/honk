@@ -1,5 +1,5 @@
 import { Activity, Globe, Server, CheckCircle2, XCircle } from "lucide-react";
-import { ShippingContainerIcon } from "@phosphor-icons/react";
+import { QuestionMarkIcon, ShippingContainerIcon } from "@phosphor-icons/react";
 
 export const connectionTypeLabel = (type: number) => {
   switch (type) {
@@ -29,15 +29,25 @@ export const connectionTypeIcon = (type: number) => {
   }
 };
 
-export const StatusBadge = ({ healthy }: { healthy: boolean }) =>
-  healthy ? (
+export const StatusBadge = ({ healthy }: { healthy: boolean | null }) => {
+  if (healthy === null || healthy === undefined) {
+    return (
+      <span className="inline-flex items-center gap-1 h-fit rounded-full bg-gray-500 px-2.5 py-1 text-xs font-medium text-muted">
+        <QuestionMarkIcon size={12} />
+        Unknown
+      </span>
+    );
+  }
+
+  return healthy ? (
     <span className="inline-flex items-center gap-1 h-fit rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-muted">
-      <CheckCircle2 className="h-3 w-3" />
+      <CheckCircle2 size={12} />
       Up
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 h-fit rounded-full bg-red-500 px-2.5 py-1 text-xs font-medium text-muted">
-      <XCircle className="h-3 w-3" />
+      <XCircle size={12} />
       Down
     </span>
   );
+};

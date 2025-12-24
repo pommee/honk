@@ -1,3 +1,4 @@
+import TimeAgo from "react-timeago";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
 
   const [form, setForm] = useState({
     id: monitor?.id,
+    enabled: monitor?.enabled ?? false,
     name: monitor?.name ?? "",
     connection: monitor?.connection ?? "",
     interval: monitor?.interval ?? 60,
@@ -53,16 +55,18 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
   });
 
   useEffect(() => {
-    if (!monitor) return;
+    if (!monitor || isEditModalOpen) return;
+
     setForm({
       id: monitor.id,
+      enabled: monitor.enabled,
       name: monitor.name,
       connection: monitor.connection,
       interval: monitor.interval,
       alwaysSave: monitor.alwaysSave,
       notification: monitor.notification
     });
-  }, [monitor]);
+  }, [monitor, isEditModalOpen]);
 
   const handleDelete = async () => {
     if (!monitor) return;
@@ -191,7 +195,18 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="p-8 max-w-6xl mx-auto">
-        <div className="bg-background rounded-2xl shadow-sm border p-8 mb-8">
+        <div
+          className={`relative bg-background rounded-2xl shadow-sm border-2 p-8 mb-8 ${
+            monitor.enabled ? "border-green-500" : "border-red-500"
+          }`}
+        >
+          <legend
+            className={`absolute -top-3 left-6 bg-background px-2 text-sm font-medium ${
+              monitor.enabled ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {monitor.enabled ? "Enabled" : "Disabled"}
+          </legend>
           <div className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-4xl font-bold tracking-tight">
@@ -201,10 +216,16 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
                 <StatusBadge healthy={monitor.healthy} />
                 <span className="text-muted-foreground text-lg">
                   Last checked:{" "}
-                  <TimeAgoWithInterval
-                    date={monitor.checked}
-                    interval={monitor.interval}
-                  />
+                  {monitor.enabled ? (
+                    <TimeAgoWithInterval
+                      date={monitor.checked}
+                      interval={monitor.interval}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground">
+                      <TimeAgo date={monitor.checked} />
+                    </span>
+                  )}
                 </span>
               </div>
             </div>
@@ -428,6 +449,16 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
                       ...f,
                       interval: Number(e.target.value)
                     }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label className="my-1">Monitor enabled</Label>
+                <Switch
+                  checked={form.enabled}
+                  onCheckedChange={(checked) =>
+                    setForm((f) => ({ ...f, enabled: checked }))
                   }
                 />
               </div>

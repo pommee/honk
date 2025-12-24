@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { TimeAgoWithInterval } from "@/components/time-ago-with-interval";
 import { StatusBadge, connectionTypeIcon } from "@/lib/monitor-ui";
 import { Monitor } from "@/types";
+import TimeAgo from "react-timeago";
 
 interface Props {
   monitors: Monitor[];
@@ -58,7 +59,11 @@ export const MonitorSidebar = ({
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
             <span>Uptime: {m.uptime.toFixed(2)}%</span>
             <span>•</span>
-            <TimeAgoWithInterval date={m.checked} interval={m.interval} />
+            {m.enabled ? (
+              <TimeAgoWithInterval date={m.checked} interval={m.interval} />
+            ) : (
+              <TimeAgo date={m.checked} />
+            )}
           </div>
         </button>
       ))}

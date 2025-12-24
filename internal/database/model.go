@@ -4,11 +4,12 @@ import "time"
 
 type Monitor struct {
 	ID             uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Enabled        bool      `json:"enabled"`
 	Name           string    `json:"name"`
 	Connection     string    `json:"connection"`
 	ConnectionType int       `json:"connectionType"`
 	Interval       int       `json:"interval"`
-	Healthy        bool      `json:"healthy"`
+	Healthy        *bool     `json:"healthy"` // nil if unknown
 	AlwaysSave     bool      `json:"alwaysSave"`
 	Uptime         float32   `json:"uptime"`
 	Checked        time.Time `json:"checked,omitzero"`
