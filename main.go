@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"honk/internal"
 	"honk/internal/api"
 	"honk/internal/database"
 	"honk/internal/monitor"
@@ -21,7 +20,6 @@ func main() {
 		Port:           8080,
 
 		Manager: monitor.NewManager(db),
-		Client:  internal.NewClient(),
 	}
 	errorChan := make(chan struct{}, 1)
 	apiServer.Manager.RegisterHandler(0, &monitor.HTTPPingHandler{Client: http.DefaultClient})
