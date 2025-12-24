@@ -1,21 +1,10 @@
 package monitor
 
-type ConnectionType int
+type ConnectionType string
 
 const (
-	ConnectionTypeHTTP ConnectionType = iota
-	ConnectionTypePing
-	ConnectionTypeContainer
-	ConnectionTypeTCP
+	ConnectionTypeHTTP      ConnectionType = "http"
+	ConnectionTypePing      ConnectionType = "ping"
+	ConnectionTypeContainer ConnectionType = "container"
+	ConnectionTypeTCP       ConnectionType = "tcp"
 )
-
-var connectionTypeName = map[ConnectionType]string{
-	ConnectionTypeHTTP:      "http",
-	ConnectionTypePing:      "ping",
-	ConnectionTypeContainer: "container",
-	ConnectionTypeTCP:       "tcp",
-}
-
-func (ct ConnectionType) String() string {
-	return connectionTypeName[ct]
-}

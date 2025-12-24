@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { connectionTypeIcon, connectionTypeLabel } from "@/lib/monitor-ui";
+import { connectionTypeIcon } from "@/lib/monitor-ui";
 import { Monitor } from "@/types";
 
 interface MonitorStatsProps {
@@ -44,7 +44,7 @@ export function MonitorStats({ monitor }: MonitorStatsProps) {
             {connectionTypeIcon(monitor.connectionType)}
           </div>
           <span className="text-2xl font-semibold">
-            {connectionTypeLabel(monitor.connectionType)}
+            {monitor.connectionType}
           </span>
         </CardContent>
       </Card>

@@ -8,28 +8,15 @@ import {
   XCircleIcon
 } from "@phosphor-icons/react";
 
-export const connectionTypeLabel = (type: number) => {
+export const connectionTypeIcon = (type: string) => {
   switch (type) {
-    case 0:
-      return "http";
-    case 1:
-      return "ping";
-    case 2:
-      return "container";
-    case 3:
-      return "tcp";
-  }
-};
-
-export const connectionTypeIcon = (type: number) => {
-  switch (type) {
-    case 0:
+    case "http":
       return <GlobeIcon size={16} />;
-    case 1:
+    case "ping":
       return <ActivityIcon size={16} />;
-    case 2:
+    case "container":
       return <ShippingContainerIcon size={16} />;
-    case 3:
+    case "tcp":
       return <ComputerTowerIcon size={16} />;
     default:
       return null;

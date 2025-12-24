@@ -8,7 +8,9 @@ export type MonitorForm = {
   alwaysSave: boolean;
   notification?: {
     enabled: boolean;
+    type: "webhook" | "email";
     webhook?: string;
+    email: string;
   } | null;
 };
 
@@ -31,7 +33,7 @@ export interface Monitor {
   enabled: boolean;
   name: string;
   connection: string;
-  connectionType: number | "http" | "ping" | "conatiner" | "tcp";
+  connectionType: "http" | "ping" | "container" | "tcp";
   interval: number;
   healthy: boolean | null;
   uptime: number;

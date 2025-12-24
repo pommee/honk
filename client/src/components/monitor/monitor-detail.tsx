@@ -7,9 +7,9 @@ import { MonitorStats } from "./monitor-stats";
 import { MonitorTarget } from "./monitor-target";
 import { MonitorChecksChart } from "./monitor-checks-chart";
 import { DeleteMonitorDialog } from "./delete-monitor-dialog";
-import { EditMonitorDialog } from "./edit-monitor-dialog";
 import { Button } from "../ui/button";
 import { ActivityIcon, PlusCircleIcon } from "@phosphor-icons/react";
+import { MonitorFormDialog } from "./edit-monitor-dialog";
 
 interface Props {
   monitor: Monitor | null;
@@ -139,14 +139,15 @@ export function MonitorDetail({
           onDelete={handleDelete}
         />
 
-        <EditMonitorDialog
+        <MonitorFormDialog
           open={isEditModalOpen}
           onOpenChange={setIsEditModalOpen}
           form={form}
           onFormChange={setForm}
-          isUpdating={isUpdating}
+          isSubmitting={isUpdating}
           onSave={handleUpdate}
           onCancel={() => setIsEditModalOpen(false)}
+          mode="edit"
         />
       </div>
     </main>

@@ -11,28 +11,33 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { WarningIcon } from "@phosphor-icons/react";
 import { MonitorForm } from "@/types";
 
-interface EditMonitorDialogProps {
+interface MonitorFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   form: MonitorForm;
-  onFormChange: (updater: (prev: MonitorForm) => MonitorForm) => void;
-  isUpdating: boolean;
+  onFormChange: (
+    updater: ((prev: MonitorForm) => MonitorForm) | MonitorForm
+  ) => void;
+  isSubmitting: boolean;
   onSave: () => void;
   onCancel: () => void;
+  mode?: "create" | "edit";
 }
 
-export function EditMonitorDialog({
+export function MonitorFormDialog({
   open,
   onOpenChange,
   form,
   onFormChange,
-  isUpdating,
+  isSubmitting,
   onSave,
-  onCancel
-}: EditMonitorDialogProps) {
+  onCancel,
+  mode = "edit"
+}: MonitorFormDialogProps) {
+  const isCreateMode = mode === "create";
+
   const getPlaceholder = () => {
     switch (form.connectionType) {
       case "http":
@@ -48,37 +53,53 @@ export function EditMonitorDialog({
     }
   };
 
+  const notification = form.notification || { enabled: false };
+
+  const handleFormChange = (
+    updater: ((prev: MonitorForm) => MonitorForm) | MonitorForm
+  ) => {
+    if (typeof updater === "function") {
+      onFormChange(updater);
+    } else {
+      onFormChange(updater);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg md:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Edit Monitor</DialogTitle>
+          <DialogTitle>
+            {isCreateMode ? "Add Monitor" : "Edit Monitor"}
+          </DialogTitle>
           <DialogDescription>
-            Update the monitor configuration. Changes apply immediately.
+            {isCreateMode
+              ? "Configure a new monitor to track service uptime."
+              : "Update the monitor configuration. Changes apply immediately."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Name (optional)</Label>
+            <Label htmlFor="monitor-name">Name (optional)</Label>
             <Input
-              id="edit-name"
+              id="monitor-name"
               placeholder="My Website"
               value={form.name}
               onChange={(e) =>
-                onFormChange((f) => ({ ...f, name: e.target.value }))
+                handleFormChange((f) => ({ ...f, name: e.target.value }))
               }
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-url">Target</Label>
+            <Label htmlFor="monitor-url">Target</Label>
             <Input
-              id="edit-url"
+              id="monitor-url"
               placeholder={getPlaceholder()}
               required
               value={form.connection}
               onChange={(e) =>
-                onFormChange((f) => ({ ...f, connection: e.target.value }))
+                handleFormChange((f) => ({ ...f, connection: e.target.value }))
               }
             />
           </div>
@@ -88,7 +109,7 @@ export function EditMonitorDialog({
             <Tabs
               value={form.connectionType}
               onValueChange={(v) =>
-                onFormChange((f) => ({ ...f, connectionType: v }))
+                handleFormChange((f) => ({ ...f, connectionType: v }))
               }
             >
               <TabsList className="bg-transparent space-x-2">
@@ -128,7 +149,7 @@ export function EditMonitorDialog({
               value={String(form.interval)}
               onValueChange={(value) =>
                 value &&
-                onFormChange((f) => ({ ...f, interval: Number(value) }))
+                handleFormChange((f) => ({ ...f, interval: Number(value) }))
               }
             >
               <ToggleGroupItem value="30">30s</ToggleGroupItem>
@@ -139,105 +160,176 @@ export function EditMonitorDialog({
             </ToggleGroup>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="edit-enabled"
-              checked={form.enabled}
-              onCheckedChange={(checked) =>
-                onFormChange((f) => ({ ...f, enabled: checked }))
-              }
-            />
-            <Label
-              htmlFor="edit-enabled"
-              className="text-sm font-medium leading-none"
-            >
-              Enable monitor
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="edit-alwaysSave"
-              checked={form.alwaysSave}
-              onCheckedChange={(checked) =>
-                onFormChange((f) => ({ ...f, alwaysSave: checked }))
-              }
-            />
-            <Label
-              htmlFor="edit-alwaysSave"
-              className="text-sm font-medium leading-none"
-            >
-              Always save response
-            </Label>
-          </div>
-
-          <div className="space-y-4">
+          <div>
             <div className="flex items-center space-x-2">
               <Switch
-                id="edit-notification"
-                checked={form.notification?.enabled ?? false}
+                id="monitor-enabled"
+                checked={form.enabled}
                 onCheckedChange={(checked) =>
-                  onFormChange((f) => ({
-                    ...f,
-                    notification: checked
-                      ? {
-                          ...f.notification,
-                          enabled: true,
-                          webhook: f.notification?.webhook || ""
-                        }
-                      : { ...f.notification, enabled: false }
-                  }))
+                  handleFormChange((f) => ({ ...f, enabled: checked }))
                 }
               />
               <Label
-                htmlFor="edit-notification"
+                htmlFor="monitor-enabled"
                 className="text-sm font-medium leading-none"
               >
-                Enable notifications
+                Enable monitor
               </Label>
             </div>
+            <p className="text-muted-foreground text-sm mt-1">
+              Will check uptime while enabled
+            </p>
+          </div>
 
-            {form.notification?.enabled && (
-              <div className="space-y-2 pl-6 border-l-2 border-muted">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="edit-webhook">Webhook URL</Label>
-                  <WarningIcon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <Input
-                  id="edit-webhook"
-                  type="url"
-                  placeholder="https://discordapp.com/api/webhooks/1234/ABCD-EFG..."
-                  value={form.notification.webhook || ""}
-                  onChange={(e) =>
-                    onFormChange((f) => ({
-                      ...f,
-                      notification: {
-                        ...f.notification,
-                        webhook: e.target.value
-                      }
+          <div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="monitor-alwaysSave"
+                checked={form.alwaysSave}
+                onCheckedChange={(checked) =>
+                  handleFormChange((f) => ({ ...f, alwaysSave: checked }))
+                }
+              />
+              <Label
+                htmlFor="monitor-alwaysSave"
+                className="text-sm font-medium leading-none"
+              >
+                Always save response
+              </Label>
+            </div>
+            <p className="text-muted-foreground text-sm mt-1">
+              Saves the response even when successful
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="monitor-notification"
+                  checked={notification.enabled}
+                  onCheckedChange={(checked) =>
+                    handleFormChange((prev) => ({
+                      ...prev,
+                      notification: checked
+                        ? {
+                            enabled: true,
+                            type: prev.notification?.type || "webhook",
+                            webhook: prev.notification?.webhook || "",
+                            email: prev.notification?.email || ""
+                          }
+                        : { enabled: false }
                     }))
                   }
                 />
-                <p className="text-xs text-muted-foreground">
-                  POST JSON payload will be sent on status changes (up → down or
-                  down → up). Example services: Slack, Discord, Teams, custom
-                  endpoints.
-                </p>
+                <Label
+                  htmlFor="monitor-notification"
+                  className="text-sm font-medium leading-none"
+                >
+                  Enable notifications
+                </Label>
               </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                Send a notification when the service is down
+              </p>
+            </div>
+
+            {notification.enabled && (
+              <>
+                <div className="space-y-2">
+                  <Label>Notification method</Label>
+                  <ToggleGroup
+                    variant={"outline"}
+                    type="single"
+                    value={notification.type || "webhook"}
+                    onValueChange={(value) =>
+                      value &&
+                      handleFormChange((prev) => ({
+                        ...prev,
+                        notification: {
+                          ...prev.notification!,
+                          type: value as "webhook" | "email"
+                        }
+                      }))
+                    }
+                  >
+                    <ToggleGroupItem value="webhook" aria-label="Webhook">
+                      Webhook
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="email" aria-label="Email">
+                      Email
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+
+                {notification.type === "webhook" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="monitor-webhook">Webhook URL</Label>
+                    <Input
+                      id="monitor-webhook"
+                      type="url"
+                      placeholder="https://discordapp.com/api/webhooks/..."
+                      value={notification.webhook || ""}
+                      onChange={(e) =>
+                        handleFormChange((prev) => ({
+                          ...prev,
+                          notification: {
+                            ...prev.notification!,
+                            webhook: e.target.value
+                          }
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      POST JSON payload will be sent on status changes (up →
+                      down or down → up).
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="monitor-email">Email address</Label>
+                    <Input
+                      id="monitor-email"
+                      type="email"
+                      placeholder="alerts@example.com"
+                      value={notification.email || ""}
+                      onChange={(e) =>
+                        handleFormChange((prev) => ({
+                          ...prev,
+                          notification: {
+                            ...prev.notification!,
+                            email: e.target.value
+                          }
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      An email will be sent on status changes.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
+
         <div className="flex justify-end gap-3 pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={isUpdating}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
-          <Button onClick={onSave} disabled={isUpdating}>
-            {isUpdating ? "Saving..." : "Save Changes"}
+          <Button onClick={onSave} disabled={isSubmitting}>
+            {isSubmitting
+              ? isCreateMode
+                ? "Adding..."
+                : "Saving..."
+              : isCreateMode
+                ? "Add Monitor"
+                : "Save Changes"}
           </Button>
         </div>
       </DialogContent>

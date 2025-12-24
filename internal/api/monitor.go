@@ -41,16 +41,16 @@ func (api *API) createMonitor(c *gin.Context) {
 		Notification:   req.Notification,
 	}
 
-	err := api.Manager.AddMonitor(monitor)
+	newMonitor, err := api.Manager.AddMonitor(monitor)
 	if err != nil {
 		logger.Warning("Failed to add monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("%v", err),
+			"error": err,
 		})
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, newMonitor)
 }
 
 func (api *API) getMonitor(c *gin.Context) {

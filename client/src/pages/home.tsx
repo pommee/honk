@@ -2,20 +2,30 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { SiteHeader } from "@/components/site-header";
-import { AddMonitorModal } from "@/app/home/AddMonitor";
-import { GetRequest } from "@/util";
+import { GetRequest, PostRequest } from "@/util";
 import { toast } from "sonner";
 
 import { mapApiMonitor } from "@/lib/monitors";
 import { useMonitorPolling } from "@/hooks/useMonitorPolling";
 import { MonitorSidebar } from "@/components/monitor/monitor-sidebar";
-import { Monitor } from "@/types";
+import { Monitor, MonitorForm } from "@/types";
 import { MonitorDetail } from "@/components/monitor/monitor-detail";
+import { MonitorFormDialog } from "@/components/monitor/edit-monitor-dialog";
 
 export default function Home() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [selected, setSelected] = useState<Monitor | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [form, setForm] = useState<MonitorForm>({
+    enabled: true,
+    name: "",
+    connection: "",
+    connectionType: "http",
+    interval: 60,
+    alwaysSave: false,
+    notification: undefined
+  });
 
   const refreshMonitor = useCallback(async (id: number) => {
     const [code, response] = await GetRequest(`monitor/${id}`);
@@ -49,7 +59,50 @@ export default function Home() {
   useMonitorPolling({ monitors, refreshMonitor });
 
   const handleCreateNewMonitor = () => {
+    setForm({
+      enabled: true,
+      name: "",
+      connection: "",
+      connectionType: "http",
+      interval: 60,
+      alwaysSave: false,
+      notification: undefined
+    });
     setIsAddOpen(true);
+  };
+
+  const handleCreate = async () => {
+    setIsCreating(true);
+    try {
+      const [code, response] = await PostRequest("monitor", form);
+      if (code !== 200) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to create monitor");
+      }
+
+      const newMonitor = mapApiMonitor(response);
+      toast.success(
+        `Monitor "${
+          newMonitor.name || newMonitor.connection
+        }" created successfully`
+      );
+
+      setMonitors((prev) => {
+        const exists = prev.some((m) => m.id === newMonitor.id);
+        return exists
+          ? prev.map((m) => (m.id === newMonitor.id ? newMonitor : m))
+          : [...prev, newMonitor];
+      });
+
+      setSelected(newMonitor);
+      await refreshMonitor(newMonitor.id);
+
+      setIsAddOpen(false);
+    } catch (err) {
+      toast.error(err.message || "Failed to create monitor");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleMonitorDeleted = (id: number) => {
@@ -70,7 +123,7 @@ export default function Home() {
           monitors={monitors}
           selected={selected}
           onSelect={setSelected}
-          onAdd={() => setIsAddOpen(true)}
+          onAdd={handleCreateNewMonitor}
         />
 
         <main className="flex-1 overflow-y-auto">
@@ -84,20 +137,15 @@ export default function Home() {
         </main>
       </div>
 
-      <AddMonitorModal
+      <MonitorFormDialog
         open={isAddOpen}
         onOpenChange={setIsAddOpen}
-        onAddMonitor={(monitor: Monitor) => {
-          setMonitors((prev) => {
-            const exists = prev.some((m) => m.name === monitor.name);
-            if (exists) {
-              return prev.map((m) => (m.name === monitor.name ? monitor : m));
-            } else {
-              return [...prev, monitor];
-            }
-          });
-          setSelected(monitor);
-        }}
+        form={form}
+        onFormChange={setForm}
+        isSubmitting={isCreating}
+        onSave={handleCreate}
+        onCancel={() => setIsAddOpen(false)}
+        mode="create"
       />
     </div>
   );

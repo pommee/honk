@@ -74,21 +74,21 @@ func (m *Manager) RegisterHandler(ct ConnectionType, h Handler) {
 	m.handlers[ct] = h
 }
 
-func (m *Manager) AddMonitor(mon *database.Monitor) error {
+func (m *Manager) AddMonitor(mon *database.Monitor) (*database.Monitor, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if _, exists := m.monitors[int(mon.ID)]; exists {
-		return fmt.Errorf("monitor %q already exists", mon.Name)
+		return nil, fmt.Errorf("monitor %q already exists", mon.Name)
 	}
 
 	if _, ok := m.handlers[ConnectionType(mon.ConnectionType)]; !ok {
-		return fmt.Errorf("no handler for connection type %d", mon.ConnectionType)
+		return nil, fmt.Errorf("no handler for connection type %s", mon.ConnectionType)
 	}
 
 	for _, existingMon := range m.monitors {
 		if existingMon.Connection == mon.Connection {
-			return fmt.Errorf("there is already a monitor for %s", mon.Connection)
+			return nil, fmt.Errorf("there is already a monitor for %s", mon.Connection)
 		}
 	}
 
@@ -98,7 +98,7 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 	m.startMonitor(int(mon.ID))
 
 	logger.Info("A new monitor was added!")
-	return nil
+	return mon, nil
 }
 
 func (m *Manager) UpdateMonitor(mon *database.Monitor) error {

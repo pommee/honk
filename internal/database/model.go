@@ -7,7 +7,7 @@ type Monitor struct {
 	Enabled        bool      `json:"enabled"`
 	Name           string    `json:"name"`
 	Connection     string    `json:"connection"`
-	ConnectionType int       `json:"connectionType"`
+	ConnectionType string    `json:"connectionType"`
 	Interval       int       `json:"interval"`
 	Healthy        *bool     `json:"healthy"` // nil if unknown
 	AlwaysSave     bool      `json:"alwaysSave"`
@@ -39,4 +39,5 @@ type Notification struct {
 	Enabled   bool   `json:"enabled"`
 	Type      string `json:"type"`
 	Webhook   string `json:"webhook"`
+	Email     string `json:"email"`
 }

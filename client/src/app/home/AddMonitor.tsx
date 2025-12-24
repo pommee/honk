@@ -18,7 +18,6 @@ import { Monitor } from "@/types";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WarningIcon } from "@phosphor-icons/react";
 
 interface AddMonitorModalProps {
   open: boolean;
@@ -32,7 +31,7 @@ export function AddMonitorModal({
   onAddMonitor
 }: AddMonitorModalProps) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<MonitorType>("http");
+  const [connectionType, setConnectionType] = useState<MonitorType>("http");
   const [url, setUrl] = useState("");
   const [interval, setInterval] = useState("60");
   const [enabled, setEnabled] = useState(true);
@@ -47,7 +46,7 @@ export function AddMonitorModal({
       enabled: enabled,
       name: name.trim() || url,
       connection: url.trim(),
-      connectionType: MonitorTypeMap[type],
+      connectionType: MonitorTypeMap[connectionType],
       interval: parseInt(interval, 10),
       alwaysSave: alwaysSave,
       notification:
@@ -89,7 +88,7 @@ export function AddMonitorModal({
 
       setName("");
       setUrl("");
-      setType("http");
+      setConnectionType("http");
       setInterval("60");
       setAlwaysSave(false);
       setNotificationEnabled(false);
@@ -104,7 +103,7 @@ export function AddMonitorModal({
   };
 
   const getPlaceholder = () => {
-    switch (type) {
+    switch (connectionType) {
       case "http":
         return "https://example.com";
       case "tcp":
@@ -151,7 +150,10 @@ export function AddMonitorModal({
 
           <div className="space-y-2">
             <Label>Monitor Type</Label>
-            <Tabs value={type} onValueChange={(v) => setType(v as MonitorType)}>
+            <Tabs
+              value={connectionType}
+              onValueChange={(v) => setConnectionType(Number(v))}
+            >
               <TabsList className="bg-transparent space-x-2">
                 <TabsTrigger
                   value="http"
@@ -197,18 +199,23 @@ export function AddMonitorModal({
             </ToggleGroup>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="enabled"
-              checked={enabled}
-              onCheckedChange={setEnabled}
-            />
-            <Label
-              htmlFor="enabled"
-              className="text-sm font-medium leading-none"
-            >
-              Enable monitor
-            </Label>
+          <div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enabled"
+                checked={enabled}
+                onCheckedChange={setEnabled}
+              />
+              <Label
+                htmlFor="enabled"
+                className="text-sm font-medium leading-none"
+              >
+                Enable monitor
+              </Label>
+            </div>
+            <p className="text-muted-foreground text-sm mt-1">
+              Will check uptime while enabled
+            </p>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -244,7 +251,6 @@ export function AddMonitorModal({
               <div className="space-y-2 pl-6 border-l-2 border-muted">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="webhook">Webhook URL</Label>
-                  <WarningIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Input
                   id="webhook"
