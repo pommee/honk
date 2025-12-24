@@ -8,9 +8,9 @@ import { toast } from "sonner";
 
 import { mapApiMonitor } from "@/lib/monitors";
 import { useMonitorPolling } from "@/hooks/useMonitorPolling";
-import { MonitorSidebar } from "@/components/monitor-sidebar";
+import { MonitorSidebar } from "@/components/monitor/monitor-sidebar";
 import { Monitor } from "@/types";
-import { MonitorDetail } from "@/components/monitor-detail";
+import { MonitorDetail } from "@/components/monitor/monitor-detail";
 
 export default function Home() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
@@ -48,6 +48,19 @@ export default function Home() {
 
   useMonitorPolling({ monitors, refreshMonitor });
 
+  const handleCreateNewMonitor = () => {
+    setIsAddOpen(true);
+  };
+
+  const handleMonitorDeleted = (id: number) => {
+    setMonitors((prev) => prev.filter((m) => m.id !== id));
+    if (selected?.id === id) setSelected(null);
+  };
+
+  const handleMonitorUpdated = async (id: number) => {
+    await refreshMonitor(id);
+  };
+
   return (
     <div className="flex h-screen flex-col">
       <SiteHeader />
@@ -63,13 +76,10 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto">
           <MonitorDetail
             monitor={selected}
-            onDeleted={(id) => {
-              setMonitors((prev) => prev.filter((m) => m.id !== id));
-              if (selected?.id === id) setSelected(null);
-            }}
-            onUpdated={async (id) => {
-              await refreshMonitor(id);
-            }}
+            hasMonitors={monitors.length > 0}
+            onDeleted={handleMonitorDeleted}
+            onUpdated={handleMonitorUpdated}
+            onCreateNew={handleCreateNewMonitor}
           />
         </main>
       </div>
