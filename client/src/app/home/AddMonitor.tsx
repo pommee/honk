@@ -69,7 +69,7 @@ export function AddMonitorModal({
         connection: monitorPayload.connection,
         connectionType: monitorPayload.connectionType,
         interval: monitorPayload.interval,
-        healthy: false,
+        healthy: null,
         alwaysSave: monitorPayload.alwaysSave,
         uptime: 0,
         checked: "",

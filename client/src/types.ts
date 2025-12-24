@@ -18,7 +18,7 @@ export interface Monitor {
   connection: string;
   connectionType: number;
   interval: number;
-  healthy: boolean;
+  healthy: boolean | null;
   uptime: number;
   alwaysSave: boolean;
   checked: string;
