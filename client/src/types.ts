@@ -1,6 +1,7 @@
 export interface Notification {
   id: number;
   monitorID: string;
+  enabled: boolean;
   type: string;
   webhook: string;
 }
@@ -16,7 +17,7 @@ export interface Monitor {
   enabled: boolean;
   name: string;
   connection: string;
-  connectionType: number;
+  connectionType: number | "http" | "ping" | "conatiner" | "tcp";
   interval: number;
   healthy: boolean | null;
   uptime: number;

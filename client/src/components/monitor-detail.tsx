@@ -31,6 +31,9 @@ import {
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import { TimeAgoWithInterval } from "./time-ago-with-interval";
+import { Input } from "./ui/input";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 
 interface Props {
   monitor: Monitor | null;
@@ -43,12 +46,12 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-
   const [form, setForm] = useState({
     id: monitor?.id,
     enabled: monitor?.enabled ?? false,
     name: monitor?.name ?? "",
     connection: monitor?.connection ?? "",
+    connectionType: monitor?.connectionType ?? "http",
     interval: monitor?.interval ?? 60,
     alwaysSave: monitor?.alwaysSave ?? false,
     notification: monitor?.notification
@@ -56,12 +59,12 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
 
   useEffect(() => {
     if (!monitor || isEditModalOpen) return;
-
     setForm({
       id: monitor.id,
       enabled: monitor.enabled,
       name: monitor.name,
       connection: monitor.connection,
+      connectionType: monitor.connectionType,
       interval: monitor.interval,
       alwaysSave: monitor.alwaysSave,
       notification: monitor.notification
@@ -70,19 +73,16 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
 
   const handleDelete = async () => {
     if (!monitor) return;
-
     setIsDeleting(true);
     try {
       const [code, response] = await DeleteRequest(
         `monitor/${monitor.id}`,
         null
       );
-
       if (code !== 200) {
         const errorText = await response.text();
         throw new Error(errorText || "Failed to delete monitor");
       }
-
       toast.success(`Monitor "${monitor.name}" deleted successfully`);
       onDeleted?.(monitor.id);
       setIsDeleteModalOpen(false);
@@ -95,16 +95,15 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
 
   const handleUpdate = async () => {
     if (!monitor) return;
-
     setIsUpdating(true);
     try {
-      const [code, response] = await PutRequest(`monitor/${monitor.id}`, form);
-
+      const [code, response] = await PutRequest(`monitor/${monitor.id}`, {
+        ...form
+      });
       if (code !== 200) {
         const text = await response.error;
         throw new Error(text || "Failed to update monitor");
       }
-
       toast.success("Monitor updated successfully");
       setIsEditModalOpen(false);
       onUpdated?.(monitor.id);
@@ -122,13 +121,26 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
     }
   };
 
+  const getPlaceholder = () => {
+    switch (form.connectionType) {
+      case "http":
+        return "https://example.com";
+      case "tcp":
+        return "example.com:443";
+      case "ping":
+        return "example.com or 8.8.8.8";
+      case "container":
+        return "container-name or container-id";
+      default:
+        return "";
+    }
+  };
+
   const CheckTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const check = payload[0].payload;
-
       return (
         <div className="bg-background border rounded-lg shadow-xl p-4 text-sm max-w-sm max-h-96 flex flex-col">
-          {/* Fixed header part */}
           <div className="shrink-0">
             <div className="font-medium mb-2">
               {check.success ? (
@@ -148,8 +160,6 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
               })}
             </div>
           </div>
-
-          {/* Scrollable body for long content */}
           <div className="mt-3 pt-3 border-t overflow-y-auto flex-1 pr-1">
             {check.err && (
               <div>
@@ -262,7 +272,6 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
               </p>
             </CardContent>
           </Card>
-
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -276,7 +285,6 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
               </p>
             </CardContent>
           </Card>
-
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -376,9 +384,8 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
               </DialogTitle>
               <DialogDescription>
                 This action cannot be undone. This will permanently delete the
-                monitor
+                monitor{" "}
                 <span className="font-semibold text-foreground">
-                  {" "}
                   "{monitor.name}"
                 </span>{" "}
                 and all its check history.
@@ -411,12 +418,12 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
                 Update the monitor configuration. Changes apply immediately.
               </DialogDescription>
             </DialogHeader>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Name</label>
-                <input
-                  className="mt-1 w-full rounded-md border bg-background px-3 py-2"
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Name (optional)</Label>
+                <Input
+                  id="edit-name"
+                  placeholder="My Website"
                   value={form.name}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, name: e.target.value }))
@@ -424,10 +431,12 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Target URL</label>
-                <input
-                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 font-mono"
+              <div className="space-y-2">
+                <Label htmlFor="edit-url">Target</Label>
+                <Input
+                  id="edit-url"
+                  placeholder={getPlaceholder()}
+                  required
                   value={form.connection}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, connection: e.target.value }))
@@ -435,73 +444,152 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium">
-                  Check Interval (seconds)
-                </label>
-                <input
-                  type="number"
-                  min={5}
-                  className="mt-1 w-full rounded-md border bg-background px-3 py-2"
-                  value={form.interval}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      interval: Number(e.target.value)
-                    }))
+              <div className="space-y-2">
+                <Label>Monitor Type</Label>
+                <Tabs
+                  value={connectionTypeLabel(form.connectionType)}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, connectionType: v }))
                   }
-                />
+                >
+                  <TabsList className="bg-transparent space-x-2">
+                    <TabsTrigger
+                      value="http"
+                      className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                    >
+                      HTTP(S)
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="ping"
+                      className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                    >
+                      Ping
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="container"
+                      className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                    >
+                      Container
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="tcp"
+                      className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
+                    >
+                      TCP
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
 
-              <div>
-                <Label className="my-1">Monitor enabled</Label>
+              <div className="space-y-3">
+                <Label>Check Interval</Label>
+                <ToggleGroup
+                  variant="outline"
+                  type="single"
+                  value={String(form.interval)}
+                  onValueChange={(value) =>
+                    value && setForm((f) => ({ ...f, interval: Number(value) }))
+                  }
+                >
+                  <ToggleGroupItem value="30">30s</ToggleGroupItem>
+                  <ToggleGroupItem value="60">60s</ToggleGroupItem>
+                  <ToggleGroupItem value="120">2m</ToggleGroupItem>
+                  <ToggleGroupItem value="300">5m</ToggleGroupItem>
+                  <ToggleGroupItem value="600">10m</ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              <div className="flex items-center space-x-2">
                 <Switch
+                  id="edit-enabled"
                   checked={form.enabled}
                   onCheckedChange={(checked) =>
                     setForm((f) => ({ ...f, enabled: checked }))
                   }
                 />
+                <Label
+                  htmlFor="edit-enabled"
+                  className="text-sm font-medium leading-none"
+                >
+                  Enable monitor
+                </Label>
               </div>
 
-              <div>
-                <Label className="my-1">Always save response</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Setting this to true will save the response even when
-                  successful.
-                </p>
+              <div className="flex items-center space-x-2">
                 <Switch
+                  id="edit-alwaysSave"
                   checked={form.alwaysSave}
                   onCheckedChange={(checked) =>
                     setForm((f) => ({ ...f, alwaysSave: checked }))
                   }
                 />
+                <Label
+                  htmlFor="edit-alwaysSave"
+                  className="text-sm font-medium leading-none"
+                >
+                  Always save response
+                </Label>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="edit-notification"
+                    checked={form.notification?.enabled ?? false}
+                    onCheckedChange={(checked) =>
+                      setForm((f) => ({
+                        ...f,
+                        notification: checked
+                          ? {
+                              ...f.notification,
+                              enabled: true,
+                              webhook: f.notification?.webhook || ""
+                            }
+                          : { ...f.notification, enabled: false }
+                      }))
+                    }
+                  />
+                  <Label
+                    htmlFor="edit-notification"
+                    className="text-sm font-medium leading-none"
+                  >
+                    Enable notifications
+                  </Label>
+                </div>
+
+                {form.notification?.enabled && (
+                  <div className="space-y-2 pl-6 border-l-2 border-muted">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="edit-webhook">Webhook URL</Label>
+                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      id="edit-webhook"
+                      type="url"
+                      placeholder="https://discordapp.com/api/webhooks/1234/ABCD-EFG..."
+                      value={form.notification.webhook || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          notification: {
+                            ...f.notification,
+                            webhook: e.target.value
+                          }
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      POST JSON payload will be sent on status changes (up →
+                      down or down → up). Example services: Slack, Discord,
+                      Teams, custom endpoints.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-
-            <div>
-              <label className="text-sm font-medium">
-                Webhook URL (optional)
-              </label>
-              <input
-                type="url"
-                className="mt-1 w-full rounded-md border bg-background px-3 py-2"
-                value={form.notification?.webhook || ""}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    notification: {
-                      id: f.notification?.id || 0,
-                      monitorID: f.notification?.monitorID || String(f.id || 0),
-                      type: "webhook",
-                      webhook: e.target.value
-                    }
-                  }))
-                }
-              />
-            </div>
-
-            <DialogFooter className="gap-2">
+            <div className="flex justify-end gap-3 pt-4">
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => setIsEditModalOpen(false)}
                 disabled={isUpdating}
@@ -511,7 +599,7 @@ export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
               <Button onClick={handleUpdate} disabled={isUpdating}>
                 {isUpdating ? "Saving..." : "Save Changes"}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

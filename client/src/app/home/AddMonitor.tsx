@@ -37,10 +37,10 @@ export function AddMonitorModal({
   const [interval, setInterval] = useState("60");
   const [enabled, setEnabled] = useState(true);
   const [alwaysSave, setAlwaysSave] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [webhook, setWebhook] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!url.trim()) return;
 
     const monitorPayload = {
@@ -50,7 +50,14 @@ export function AddMonitorModal({
       connectionType: MonitorTypeMap[type],
       interval: parseInt(interval, 10),
       alwaysSave: alwaysSave,
-      notification: { type: "webhook", webhook: webhook }
+      notification:
+        notificationEnabled && webhook.trim()
+          ? {
+              enabled: notificationEnabled,
+              type: "webhook",
+              webhook: webhook.trim()
+            }
+          : null
     };
 
     try {
@@ -75,7 +82,7 @@ export function AddMonitorModal({
         checked: "",
         checks: [],
         result: "",
-        notification: null
+        notification: monitorPayload.notification
       };
 
       onAddMonitor?.(newMonitor);
@@ -85,6 +92,7 @@ export function AddMonitorModal({
       setType("http");
       setInterval("60");
       setAlwaysSave(false);
+      setNotificationEnabled(false);
       setWebhook("");
       onOpenChange(false);
 
@@ -119,7 +127,7 @@ export function AddMonitorModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Name (optional)</Label>
             <Input
@@ -217,23 +225,41 @@ export function AddMonitorModal({
             </Label>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="webhook">Webhook URL (optional)</Label>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="notification"
+                checked={notificationEnabled}
+                onCheckedChange={setNotificationEnabled}
+              />
+              <Label
+                htmlFor="notification"
+                className="text-sm font-medium leading-none"
+              >
+                Enable notifications
+              </Label>
             </div>
-            <Input
-              id="webhook"
-              type="url"
-              placeholder="https://discordapp.com/api/webhooks/1234/ABCD-EFG..."
-              value={webhook}
-              onChange={(e) => setWebhook(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              POST JSON payload will be sent on status changes (up → down or
-              down → up). Example services: Slack, Discord, Teams, custom
-              endpoints.
-            </p>
+
+            {notificationEnabled && (
+              <div className="space-y-2 pl-6 border-l-2 border-muted">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="webhook">Webhook URL</Label>
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <Input
+                  id="webhook"
+                  type="url"
+                  placeholder="https://discordapp.com/api/webhooks/1234/ABCD-EFG..."
+                  value={webhook}
+                  onChange={(e) => setWebhook(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  POST JSON payload will be sent on status changes (up → down or
+                  down → up). Example services: Slack, Discord, Teams, custom
+                  endpoints.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
@@ -244,9 +270,9 @@ export function AddMonitorModal({
             >
               Cancel
             </Button>
-            <Button type="submit">Add Monitor</Button>
+            <Button onClick={handleSubmit}>Add Monitor</Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

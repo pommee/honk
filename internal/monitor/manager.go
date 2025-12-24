@@ -132,13 +132,14 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 		if mon.Notification.Type != "" || mon.Notification.Webhook != "" {
 			notification := database.Notification{
 				MonitorID: existing.ID,
+				Enabled:   mon.Notification.Enabled,
 				Type:      mon.Notification.Type,
 				Webhook:   mon.Notification.Webhook,
 			}
 
 			result := tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "monitor_id"}},
-				DoUpdates: clause.AssignmentColumns([]string{"type", "webhook"}),
+				DoUpdates: clause.AssignmentColumns([]string{"enabled", "type", "webhook"}),
 			}).Create(&notification)
 
 			if result.Error != nil {
@@ -249,7 +250,6 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 
 	if !mon.Enabled {
 		mon.Healthy = nil
-
 		if err := m.db.Save(mon).Error; err != nil {
 			logger.Error("failed to update disabled monitor: %v", err)
 		}
@@ -264,14 +264,25 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		return
 	}
 
-	start := time.Now()
-	response, err := handler.Check(ctx, mon)
+	var (
+		start         = time.Now()
+		response, err = handler.Check(ctx, mon)
+		result        = response
+	)
 
-	mon.Checked = start
+	if err != nil {
+		if result == "" {
+			result = err.Error()
+		}
+	} else if !mon.AlwaysSave {
+		result = ""
+	}
+
 	healthy := err == nil
-	mon.Healthy = &healthy // Set to pointer
+	mon.Checked = start
+	mon.Healthy = &healthy
 	mon.TotalChecks++
-	if *mon.Healthy {
+	if healthy {
 		mon.SuccessfulChecks++
 	}
 
@@ -282,16 +293,16 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	check := &database.MonitorCheck{
 		MonitorID: mon.ID,
 		Created:   start,
-		Success:   *mon.Healthy,
-		Result:    response,
+		Success:   healthy,
+		Result:    result,
 	}
 
-	if err := m.db.Create(check).Error; err != nil {
-		logger.Error("failed to save monitor check: %v", err)
+	if dbErr := m.db.Create(check).Error; dbErr != nil {
+		logger.Error("failed to save monitor check: %v", dbErr)
 	}
 
-	if err := m.db.Save(mon).Error; err != nil {
-		logger.Error("failed to update monitor: %v", err)
+	if dbErr := m.db.Save(mon).Error; dbErr != nil {
+		logger.Error("failed to update monitor: %v", dbErr)
 	}
 }
 

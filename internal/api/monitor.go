@@ -31,7 +31,7 @@ func (api *API) createMonitor(c *gin.Context) {
 		return
 	}
 
-	err := api.Manager.AddMonitor(&database.Monitor{
+	monitor := &database.Monitor{
 		Enabled:        *req.Enabled,
 		Name:           req.Name,
 		ConnectionType: req.ConnectionType,
@@ -39,7 +39,9 @@ func (api *API) createMonitor(c *gin.Context) {
 		Interval:       req.Interval,
 		AlwaysSave:     *req.AlwaysSave,
 		Notification:   req.Notification,
-	})
+	}
+
+	err := api.Manager.AddMonitor(monitor)
 	if err != nil {
 		logger.Warning("Failed to add monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
