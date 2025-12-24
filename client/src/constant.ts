@@ -6,4 +6,3 @@ export const MonitorTypeMap = {
 } as const;
 
 export type MonitorType = keyof typeof MonitorTypeMap;
-type MonitorTypeInt = (typeof MonitorTypeMap)[MonitorType];

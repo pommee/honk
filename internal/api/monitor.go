@@ -14,9 +14,9 @@ func (api *API) registerMonitorRoutes() {
 	api.routes.POST("/monitor", api.createMonitor)
 
 	api.routes.GET("/monitors", api.listMonitors)
-	api.routes.GET("/monitor/:name", api.getMonitor)
+	api.routes.GET("/monitor/:id", api.getMonitor)
 
-	api.routes.PUT("/monitor/:name", api.updateMonitor)
+	api.routes.PUT("/monitor/:id", api.updateMonitor)
 
 	api.routes.DELETE("/monitor/:id", api.deleteMonitor)
 }
@@ -37,6 +37,7 @@ func (api *API) createMonitor(c *gin.Context) {
 		Connection:     req.Connection,
 		Interval:       req.Interval,
 		AlwaysSave:     *req.AlwaysSave,
+		Notification:   req.Notification,
 	})
 	if err != nil {
 		logger.Warning("Failed to add monitor: %v", err)
@@ -50,12 +51,13 @@ func (api *API) createMonitor(c *gin.Context) {
 }
 
 func (api *API) getMonitor(c *gin.Context) {
-	name := c.Param("name")
+	idParam := c.Param("id")
+	id, _ := strconv.Atoi(idParam)
 
-	monitor := api.Manager.GetMonitor(name)
+	monitor := api.Manager.GetMonitor(id)
 	if monitor == nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("monitor with name '%s' not found", name),
+			"error": fmt.Sprintf("monitor with id '%d' not found", id),
 		})
 		return
 	}
@@ -80,6 +82,7 @@ func (api *API) updateMonitor(c *gin.Context) {
 		Connection:     req.Connection,
 		Interval:       req.Interval,
 		AlwaysSave:     *req.AlwaysSave,
+		Notification:   req.Notification,
 	})
 	if err != nil {
 		logger.Warning("Failed to update monitor: %v", err)

@@ -29,13 +29,15 @@ import {
 } from "recharts";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
+import { TimeAgoWithInterval } from "./time-ago-with-interval";
 
 interface Props {
   monitor: Monitor | null;
-  onDeleted?: (name: string) => void;
+  onDeleted?: (id: number) => void;
+  onUpdated?: (id: number) => void;
 }
 
-export function MonitorDetail({ monitor, onDeleted }: Props) {
+export function MonitorDetail({ monitor, onDeleted, onUpdated }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -46,7 +48,8 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
     name: monitor?.name ?? "",
     connection: monitor?.connection ?? "",
     interval: monitor?.interval ?? 60,
-    alwaysSave: monitor?.alwaysSave ?? false
+    alwaysSave: monitor?.alwaysSave ?? false,
+    notification: monitor?.notification
   });
 
   useEffect(() => {
@@ -56,7 +59,8 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
       name: monitor.name,
       connection: monitor.connection,
       interval: monitor.interval,
-      alwaysSave: monitor.alwaysSave
+      alwaysSave: monitor.alwaysSave,
+      notification: monitor.notification
     });
   }, [monitor]);
 
@@ -66,7 +70,7 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
     setIsDeleting(true);
     try {
       const [code, response] = await DeleteRequest(
-        `monitor/${encodeURIComponent(monitor.id)}`,
+        `monitor/${monitor.id}`,
         null
       );
 
@@ -76,9 +80,9 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
       }
 
       toast.success(`Monitor "${monitor.name}" deleted successfully`);
-      onDeleted?.(monitor.name);
+      onDeleted?.(monitor.id);
       setIsDeleteModalOpen(false);
-    } catch (err: any) {
+    } catch (err) {
       toast.error(err.message || "Failed to delete monitor");
     } finally {
       setIsDeleting(false);
@@ -90,10 +94,7 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
 
     setIsUpdating(true);
     try {
-      const [code, response] = await PutRequest(
-        `monitor/${encodeURIComponent(monitor.name)}`,
-        form
-      );
+      const [code, response] = await PutRequest(`monitor/${monitor.id}`, form);
 
       if (code !== 200) {
         const text = await response.error;
@@ -102,7 +103,8 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
 
       toast.success("Monitor updated successfully");
       setIsEditModalOpen(false);
-    } catch (err: any) {
+      onUpdated?.(monitor.id);
+    } catch (err) {
       toast.error(err.message || "Failed to update monitor");
     } finally {
       setIsUpdating(false);
@@ -116,40 +118,57 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
     }
   };
 
-  const CheckTooltip = ({ active, payload }: any) => {
+  const CheckTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const check = payload[0].payload;
+
       return (
-        <div className="bg-background border rounded-lg shadow-xl p-4 text-sm">
-          <div className="font-medium mb-2">
-            {check.success ? (
-              <span className="text-green-500">✓ Success</span>
-            ) : (
-              <span className="text-red-500">✗ Failed</span>
+        <div className="bg-background border rounded-lg shadow-xl p-4 text-sm max-w-sm max-h-96 flex flex-col">
+          {/* Fixed header part */}
+          <div className="shrink-0">
+            <div className="font-medium mb-2">
+              {check.success ? (
+                <span className="text-green-500">✓ Success</span>
+              ) : (
+                <span className="text-red-500">✗ Failed</span>
+              )}
+            </div>
+            <div className="text-muted-foreground">
+              {new Date(check.created).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false
+              })}
+            </div>
+          </div>
+
+          {/* Scrollable body for long content */}
+          <div className="mt-3 pt-3 border-t overflow-y-auto flex-1 pr-1">
+            {check.err && (
+              <div>
+                <span className="font-medium text-red-600">Error:</span>
+                <pre className="text-muted-foreground mt-1 whitespace-pre-wrap break-words">
+                  {check.err}
+                </pre>
+              </div>
+            )}
+            {!check.err && check.result && (
+              <div>
+                <span className="font-medium">Response:</span>
+                <pre className="text-muted-foreground mt-1 whitespace-pre-wrap break-words">
+                  {check.result}
+                </pre>
+              </div>
+            )}
+            {!check.err && !check.result && (
+              <div className="text-muted-foreground italic">
+                No additional details
+              </div>
             )}
           </div>
-          <div className="text-muted-foreground">
-            {new Date(check.created).toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: false
-            })}
-          </div>
-          {check.err && (
-            <div className="mt-2 pt-2 border-t">
-              <span className="font-medium text-red-600">Error:</span>
-              <span className="text-muted-foreground">{check.err}</span>
-            </div>
-          )}
-          {!check.err && check.result && (
-            <div className="mt-2 pt-2 border-t">
-              <span className="font-medium">Response:</span>
-              <span className="text-muted-foreground">{check.result}</span>
-            </div>
-          )}
         </div>
       );
     }
@@ -181,7 +200,11 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
               <div className="mt-4 flex items-center gap-6">
                 <StatusBadge healthy={monitor.healthy} />
                 <span className="text-muted-foreground text-lg">
-                  Last checked: {monitor.checked}
+                  Last checked:{" "}
+                  <TimeAgoWithInterval
+                    date={monitor.checked}
+                    interval={monitor.interval}
+                  />
                 </span>
               </div>
             </div>
@@ -422,6 +445,28 @@ export function MonitorDetail({ monitor, onDeleted }: Props) {
                   }
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">
+                Webhook URL (optional)
+              </label>
+              <input
+                type="url"
+                className="mt-1 w-full rounded-md border bg-background px-3 py-2"
+                value={form.notification?.webhook || ""}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    notification: {
+                      id: f.notification?.id || 0,
+                      monitorID: f.notification?.monitorID || String(f.id || 0),
+                      type: "webhook",
+                      webhook: e.target.value
+                    }
+                  }))
+                }
+              />
             </div>
 
             <DialogFooter className="gap-2">

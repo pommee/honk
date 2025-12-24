@@ -1,3 +1,10 @@
+export interface Notification {
+  id: number;
+  monitorID: string;
+  type: string;
+  webhook: string;
+}
+
 export interface Check {
   created: string;
   success: boolean;
@@ -15,4 +22,6 @@ export interface Monitor {
   alwaysSave: boolean;
   checked: string;
   checks: Check[];
+  result: string;
+  notification: Notification | null;
 }

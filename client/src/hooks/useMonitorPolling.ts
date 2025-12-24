@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 interface Props {
   monitors: Monitor[];
-  refreshMonitor: (name: string) => void;
+  refreshMonitor: (id: number) => void;
 }
 
 export const useMonitorPolling = ({ monitors, refreshMonitor }: Props) => {
@@ -20,7 +20,7 @@ export const useMonitorPolling = ({ monitors, refreshMonitor }: Props) => {
         const elapsed = Math.floor((now - lastChecked) / 1000);
 
         if (elapsed >= monitor.interval) {
-          refreshMonitor(monitor.name);
+          refreshMonitor(monitor.id);
         }
       });
     }, 1000);

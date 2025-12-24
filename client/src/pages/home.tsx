@@ -17,15 +17,15 @@ export default function Home() {
   const [selected, setSelected] = useState<Monitor | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const refreshMonitor = useCallback(async (name: string) => {
-    const [code, response] = await GetRequest(`monitor/${name}`);
+  const refreshMonitor = useCallback(async (id: number) => {
+    const [code, response] = await GetRequest(`monitor/${id}`);
     if (code !== 200) return;
 
     const updated = mapApiMonitor(response);
 
-    setMonitors((prev) => prev.map((m) => (m.name === name ? updated : m)));
+    setMonitors((prev) => prev.map((m) => (m.id === id ? updated : m)));
 
-    setSelected((prev) => (prev?.name === name ? updated : prev));
+    setSelected((prev) => (prev?.id === id ? updated : prev));
   }, []);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function Home() {
 
       if (mapped.length > 0) {
         setSelected(mapped[0]);
-        await refreshMonitor(mapped[0].name);
+        await refreshMonitor(mapped[0].id);
       }
     })();
   }, [refreshMonitor]);
@@ -63,9 +63,12 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto">
           <MonitorDetail
             monitor={selected}
-            onDeleted={(name) => {
-              setMonitors((prev) => prev.filter((m) => m.name !== name));
-              if (selected?.name === name) setSelected(null);
+            onDeleted={(id) => {
+              setMonitors((prev) => prev.filter((m) => m.id !== id));
+              if (selected?.id === id) setSelected(null);
+            }}
+            onUpdated={async (id) => {
+              await refreshMonitor(id);
             }}
           />
         </main>

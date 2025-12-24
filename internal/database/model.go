@@ -17,6 +17,8 @@ type Monitor struct {
 	TotalChecks      int `json:"-"`
 	SuccessfulChecks int `json:"-"`
 
+	Notification Notification `gorm:"foreignKey:MonitorID" json:"notification"`
+
 	Checks []MonitorCheck `gorm:"foreignKey:MonitorID" json:"checks"`
 }
 
@@ -28,4 +30,11 @@ type MonitorCheck struct {
 	Result    string    `json:"result,omitempty"`
 
 	Monitor Monitor `gorm:"foreignKey:MonitorID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
+}
+
+type Notification struct {
+	ID        uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	MonitorID uint   `gorm:"uniqueIndex;not null" json:"monitorID"`
+	Type      string `json:"type"`
+	Webhook   string `json:"webhook"`
 }

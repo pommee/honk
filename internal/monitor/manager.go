@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var logger = internal.GetLogger()
@@ -87,7 +88,7 @@ func (m *Manager) AddMonitor(mon *database.Monitor) error {
 
 	for _, existingMon := range m.monitors {
 		if existingMon.Connection == mon.Connection {
-			return fmt.Errorf("There is already a monitor for %s", mon.Connection)
+			return fmt.Errorf("there is already a monitor for %s", mon.Connection)
 		}
 	}
 
@@ -122,19 +123,44 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 
 	m.mu.Unlock()
 
-	if err := m.db.Save(existing).Error; err != nil {
+	err := m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit("Notification").Save(existing).Error; err != nil {
+			return err
+		}
+
+		if mon.Notification.Type != "" || mon.Notification.Webhook != "" {
+			notification := database.Notification{
+				MonitorID: existing.ID,
+				Type:      mon.Notification.Type,
+				Webhook:   mon.Notification.Webhook,
+			}
+
+			result := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "monitor_id"}},
+				DoUpdates: clause.AssignmentColumns([]string{"type", "webhook"}),
+			}).Create(&notification)
+
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return err
 	}
 
 	m.startMonitor(int(existing.ID))
 
-	logger.Info("Monitor '%s' updated", existing.Name)
+	logger.Info("Monitor '%s' with id %d was updated", existing.Name, existing.ID)
 	return nil
 }
 
-func (m *Manager) GetMonitor(name string) *database.Monitor {
+func (m *Manager) GetMonitor(id int) *database.Monitor {
 	var mon database.Monitor
-	err := m.db.Preload("Checks").Where("name = ?", name).First(&mon).Error
+	err := m.db.Preload(clause.Associations).Where("id = ?", id).First(&mon).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil
@@ -154,7 +180,7 @@ func (m *Manager) RemoveMonitor(id int) error {
 
 	mon, exists := m.monitors[id]
 	if !exists {
-		return fmt.Errorf("Monitor with id %d does not exist", id)
+		return fmt.Errorf("monitor with id %d does not exist", id)
 	}
 
 	if runner, exists := m.runners[id]; exists {

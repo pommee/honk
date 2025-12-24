@@ -110,6 +110,7 @@ export async function GetRequest(url: string, ignoreError?: boolean) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function PatchRequest(url: string, ignoreError?: boolean) {
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/${url}`, {

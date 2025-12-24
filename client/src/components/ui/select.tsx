@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
 import { Select as SelectPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
@@ -168,15 +169,4 @@ function SelectScrollDownButton({
   );
 }
 
-export {
-  Select,
-  SelectContent,
-  
-  SelectItem,
-  
-  
-  
-  
-  SelectTrigger,
-  SelectValue
-};
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };

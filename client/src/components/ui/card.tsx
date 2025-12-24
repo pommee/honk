@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -65,11 +66,4 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-export {
-  Card,
-  CardHeader,
-  
-  CardTitle,
-  
-  CardContent
-};
+export { Card, CardHeader, CardTitle, CardContent };
