@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { TimeAgoWithInterval } from "@/components/time-ago-with-interval";
+import { TimeAgoWithInterval } from "@/components/ui/time-ago-with-interval";
 import { StatusBadge, connectionTypeIcon } from "@/lib/monitor-ui";
 import { Monitor } from "@/types";
 import TimeAgo from "react-timeago";
+import { PlusIcon } from "@phosphor-icons/react";
 
 interface Props {
   monitors: Monitor[];
@@ -23,7 +23,7 @@ export const MonitorSidebar = ({
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Monitors</h2>
         <Button size="sm" onClick={onAdd}>
-          <Plus className="h-4 w-4 mr-2" />
+          <PlusIcon className="h-4 w-4 mr-2" />
           Add
         </Button>
       </div>

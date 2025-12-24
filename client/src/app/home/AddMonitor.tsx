@@ -18,7 +18,7 @@ import { Monitor } from "@/types";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle } from "lucide-react";
+import { WarningIcon } from "@phosphor-icons/react";
 
 interface AddMonitorModalProps {
   open: boolean;
@@ -244,7 +244,7 @@ export function AddMonitorModal({
               <div className="space-y-2 pl-6 border-l-2 border-muted">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="webhook">Webhook URL</Label>
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <WarningIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Input
                   id="webhook"

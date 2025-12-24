@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { Activity, PlusCircle } from "lucide-react";
-import { Monitor } from "@/types";
+import { Monitor, MonitorForm } from "@/types";
 import { toast } from "sonner";
 import { DeleteRequest, PutRequest } from "@/util";
 import { MonitorHeader } from "./monitor-header";
 import { MonitorStats } from "./monitor-stats";
 import { MonitorTarget } from "./monitor-target";
 import { MonitorChecksChart } from "./monitor-checks-chart";
-import { DeleteMonitorDialog } from "../ui/delete-monitor-dialog";
-import { EditMonitorDialog } from "../ui/edit-monitor-dialog";
+import { DeleteMonitorDialog } from "./delete-monitor-dialog";
+import { EditMonitorDialog } from "./edit-monitor-dialog";
 import { Button } from "../ui/button";
+import { ActivityIcon, PlusCircleIcon } from "@phosphor-icons/react";
 
 interface Props {
   monitor: Monitor | null;
@@ -30,16 +30,23 @@ export function MonitorDetail({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [form, setForm] = useState(() => ({
+  const [form, setForm] = useState<MonitorForm>({
     id: monitor?.id,
     enabled: monitor?.enabled ?? false,
     name: monitor?.name ?? "",
     connection: monitor?.connection ?? "",
-    connectionType: monitor?.connectionType ?? "http",
+    connectionType:
+      (monitor?.connectionType as "http" | "ping" | "container" | "tcp") ??
+      "http",
     interval: monitor?.interval ?? 60,
     alwaysSave: monitor?.alwaysSave ?? false,
     notification: monitor?.notification
-  }));
+      ? {
+          enabled: monitor.notification.enabled,
+          webhook: monitor.notification.webhook
+        }
+      : undefined
+  });
 
   useEffect(() => {
     if (!monitor || isEditModalOpen) return;
@@ -156,7 +163,7 @@ interface EmptyStateProps {
   onCreateNew?: () => void;
 }
 
-export function EmptyState({ hasMonitors, onCreateNew }: EmptyStateProps) {
+function EmptyState({ hasMonitors, onCreateNew }: EmptyStateProps) {
   return (
     <div className="h-full flex items-center justify-center p-6">
       <div className="max-w-sm w-full">
@@ -166,7 +173,7 @@ export function EmptyState({ hasMonitors, onCreateNew }: EmptyStateProps) {
               !hasMonitors ? "bg-primary/10" : "bg-muted"
             }`}
           >
-            <Activity
+            <ActivityIcon
               className={`h-7 w-7 ${
                 !hasMonitors ? "text-primary" : "text-muted-foreground"
               }`}
@@ -186,7 +193,7 @@ export function EmptyState({ hasMonitors, onCreateNew }: EmptyStateProps) {
 
           {!hasMonitors && onCreateNew && (
             <Button variant={"link"} onClick={onCreateNew}>
-              <PlusCircle size={16} />
+              <PlusCircleIcon size={16} />
               Create first monitor
             </Button>
           )}

@@ -1,10 +1,10 @@
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AnimatePresence } from "motion/react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import Layout from "../app/layout";
 import { FileXIcon } from "@phosphor-icons/react";
 import Home from "./home";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 function NotFound() {
   return (

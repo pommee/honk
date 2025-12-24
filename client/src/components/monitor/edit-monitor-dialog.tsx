@@ -11,13 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { AlertCircle } from "lucide-react";
+import { WarningIcon } from "@phosphor-icons/react";
+import { MonitorForm } from "@/types";
 
 interface EditMonitorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  form: any;
-  onFormChange: (updater: (prev: any) => any) => void;
+  form: MonitorForm;
+  onFormChange: (updater: (prev: MonitorForm) => MonitorForm) => void;
   isUpdating: boolean;
   onSave: () => void;
   onCancel: () => void;
@@ -200,7 +201,7 @@ export function EditMonitorDialog({
               <div className="space-y-2 pl-6 border-l-2 border-muted">
                 <div className="flex items-center gap-2">
                   <Label htmlFor="edit-webhook">Webhook URL</Label>
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <WarningIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Input
                   id="edit-webhook"

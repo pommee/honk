@@ -7,8 +7,8 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
 import { Monitor } from "@/types";
+import { WarningIcon } from "@phosphor-icons/react";
 
 interface DeleteMonitorDialogProps {
   open: boolean;
@@ -30,7 +30,7 @@ export function DeleteMonitorDialog({
       <DialogContent className="w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-5 w-5" />
+            <WarningIcon className="h-5 w-5" />
             Delete Monitor
           </DialogTitle>
           <DialogDescription>

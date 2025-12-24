@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
 import { Monitor } from "@/types";
+import { CopyIcon } from "@phosphor-icons/react";
 
 interface MonitorTargetProps {
   monitor: Monitor;
@@ -29,7 +29,7 @@ export function MonitorTarget({ monitor, onCopy }: MonitorTargetProps) {
             onClick={onCopy}
             className="shrink-0"
           >
-            <Copy className="h-4 w-4" />
+            <CopyIcon className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>

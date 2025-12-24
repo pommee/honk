@@ -1,4 +1,4 @@
-import { ModeToggle } from "./theme-toggle";
+import { ModeToggle } from "./theme/theme-toggle";
 
 export function SiteHeader() {
   return (

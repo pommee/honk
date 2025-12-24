@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/lib/monitor-ui";
-import { TimeAgoWithInterval } from "../time-ago-with-interval";
+import { TimeAgoWithInterval } from "../ui/time-ago-with-interval";
 import { Monitor } from "@/types";
 import TimeAgo from "react-timeago";
 

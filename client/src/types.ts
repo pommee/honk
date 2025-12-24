@@ -1,4 +1,18 @@
-export interface Notification {
+export type MonitorForm = {
+  id?: number;
+  enabled: boolean;
+  name: string;
+  connection: string;
+  connectionType: "http" | "ping" | "container" | "tcp";
+  interval: number;
+  alwaysSave: boolean;
+  notification?: {
+    enabled: boolean;
+    webhook?: string;
+  } | null;
+};
+
+interface Notification {
   id: number;
   monitorID: string;
   enabled: boolean;
