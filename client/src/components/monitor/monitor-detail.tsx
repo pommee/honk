@@ -119,23 +119,18 @@ export function MonitorDetail({
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="p-8 max-w-6xl mx-auto">
-        {/* Header Section */}
         <MonitorHeader
           monitor={monitor}
           onEdit={() => setIsEditModalOpen(true)}
           onDelete={() => setIsDeleteModalOpen(true)}
         />
 
-        {/* Stats Grid */}
         <MonitorStats monitor={monitor} />
 
-        {/* Target URL */}
         <MonitorTarget monitor={monitor} onCopy={copyTarget} />
 
-        {/* Recent Checks Chart */}
         <MonitorChecksChart checks={monitor.checks} />
 
-        {/* Dialogs */}
         <DeleteMonitorDialog
           open={isDeleteModalOpen}
           onOpenChange={setIsDeleteModalOpen}
