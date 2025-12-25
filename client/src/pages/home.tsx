@@ -28,7 +28,7 @@ export default function Home() {
     setMonitors((prev) => prev.map((m) => (m.id === id ? response : m)));
 
     setSelected((prev) => {
-      if (prev?.id === id) {
+      if (prev && prev.id === id) {
         return response;
       }
       return prev;

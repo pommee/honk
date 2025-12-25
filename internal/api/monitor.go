@@ -32,8 +32,6 @@ func (api *API) createMonitor(c *gin.Context) {
 		return
 	}
 
-	logger.Info("%+v", req)
-
 	monitor := &database.Monitor{
 		Enabled:            *req.Enabled,
 		Name:               req.Name,

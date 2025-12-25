@@ -36,8 +36,12 @@ export const MonitorSidebar = ({
       {monitors.map((m) => (
         <button
           key={m.id}
-          onClick={() => onSelect(m)}
-          className={`w-full border p-2 text-left hover:border-primary cursor-pointer ${
+          onClick={() => {
+            // Correct monitor clicked here
+            console.log(m);
+            onSelect(m);
+          }}
+          className={`w-full border p-2 text-left hover:border-primary transition-colors cursor-pointer ${
             selected?.id === m.id ? "border-primary" : ""
           }`}
         >

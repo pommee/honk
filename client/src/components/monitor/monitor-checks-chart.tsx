@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Drawer,
@@ -32,10 +32,8 @@ const CustomTooltip = ({ active, payload }: any) => {
     const data = payload[0].payload;
     return (
       <div className="bg-background border rounded-lg shadow-lg p-3">
-        <p className="text-sm font-medium">
-          {data.success ? "✓ Success" : "✗ Failed"}
-        </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs">
+          <span className="text-muted-foreground">Date: </span>
           {new Date(data.created).toLocaleString("en-US", {
             month: "short",
             day: "numeric",
@@ -45,9 +43,13 @@ const CustomTooltip = ({ active, payload }: any) => {
             hour12: false
           })}
         </p>
-        <p className="text-xs font-medium mt-1">{data.responseTimeMs}ms</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Check #{data.originalIndex + 1}
+        <p className="text-xs font-medium mt-1">
+          <span className="text-muted-foreground">Took: </span>
+          {data.responseTimeMs}ms
+        </p>
+        <p className="text-xs mt-1">
+          <span className="text-muted-foreground">Check: </span>#
+          {data.originalIndex + 1}
         </p>
       </div>
     );
@@ -61,14 +63,16 @@ export function MonitorChecksChart({
 }: MonitorChecksChartProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCheck, setSelectedCheck] = useState<Check | null>(null);
-  const totalPages = Math.ceil(checks.length / itemsPerPage);
-  const [currentPage, setCurrentPage] = useState(
-    totalPages > 0 ? totalPages : 1
-  );
+  const [currentPage, setCurrentPage] = useState(1);
 
+  const totalPages = Math.ceil(checks.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, checks.length);
   const currentChecks = checks.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(totalPages);
+  }, [checks]);
 
   const chartData = currentChecks.map((check, idx) => ({
     id: `#${startIndex + idx + 1}`,
@@ -163,7 +167,7 @@ export function MonitorChecksChart({
               data={chartData}
               margin={{ top: 0, right: 0, bottom: 0, left: 10 }}
             >
-              <XAxis dataKey="id" tick={{ fontSize: 10 }} interval={0} />
+              <XAxis dataKey="id" tick={false} />
               <YAxis
                 dataKey="responseTimeMs"
                 tick={{ fontSize: 10 }}
@@ -285,7 +289,7 @@ export function MonitorChecksChart({
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Result</p>
                     <ScrollArea className="h-72 w-full bg-muted rounded-md border p-1">
-                      <pre className="text-xs whitespace-pre-wrap wrap-break-words">
+                      <pre className="text-sm text-wrap">
                         {selectedCheck.result || "No result data available"}
                       </pre>
                     </ScrollArea>
