@@ -12,6 +12,7 @@ import (
 
 func (api *API) registerMonitorRoutes() {
 	api.routes.POST("/monitor", api.createMonitor)
+	api.routes.POST("/monitor/:id/run", api.runMonitor)
 
 	api.routes.GET("/monitors", api.listMonitors)
 	api.routes.GET("/monitor/:id", api.getMonitor)
@@ -31,14 +32,17 @@ func (api *API) createMonitor(c *gin.Context) {
 		return
 	}
 
+	logger.Info("%+v", req)
+
 	monitor := &database.Monitor{
-		Enabled:        *req.Enabled,
-		Name:           req.Name,
-		ConnectionType: req.ConnectionType,
-		Connection:     req.Connection,
-		Interval:       req.Interval,
-		AlwaysSave:     *req.AlwaysSave,
-		Notification:   req.Notification,
+		Enabled:            *req.Enabled,
+		Name:               req.Name,
+		ConnectionType:     req.ConnectionType,
+		Connection:         req.Connection,
+		Interval:           req.Interval,
+		AlwaysSave:         *req.AlwaysSave,
+		Notification:       req.Notification,
+		HttpMonitorHeaders: req.HttpMonitorHeaders,
 	}
 
 	newMonitor, err := api.Manager.AddMonitor(monitor)
@@ -53,9 +57,31 @@ func (api *API) createMonitor(c *gin.Context) {
 	c.JSON(http.StatusOK, newMonitor)
 }
 
+func (api *API) runMonitor(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor id"})
+		return
+	}
+
+	newMonitor, err := api.Manager.RunMonitor(id)
+	if err != nil {
+		logger.Warning("Failed to add monitor: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, newMonitor)
+}
+
 func (api *API) getMonitor(c *gin.Context) {
-	idParam := c.Param("id")
-	id, _ := strconv.Atoi(idParam)
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor id"})
+		return
+	}
 
 	monitor := api.Manager.GetMonitor(id)
 	if monitor == nil {
@@ -104,8 +130,7 @@ func (api *API) listMonitors(c *gin.Context) {
 }
 
 func (api *API) deleteMonitor(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor id"})
 		return

@@ -1,3 +1,9 @@
+interface Headers {
+  id: number;
+  key: string;
+  value: string;
+}
+
 export type MonitorForm = {
   id?: number;
   enabled: boolean;
@@ -6,20 +12,28 @@ export type MonitorForm = {
   connectionType: "http" | "ping" | "container" | "tcp";
   interval: number;
   alwaysSave: boolean;
-  notification?: {
-    enabled: boolean;
-    type: "webhook" | "email";
-    webhook?: string;
-    email: string;
-  } | null;
+  headers: Headers[];
+  notification?: Notification | null;
+};
+
+export const DefaultMonitorForm: MonitorForm = {
+  enabled: true,
+  name: "",
+  connection: "",
+  connectionType: "http",
+  interval: 60,
+  alwaysSave: false,
+  headers: [],
+  notification: null
 };
 
 interface Notification {
   id: number;
-  monitorID: string;
+  monitorID: number;
   enabled: boolean;
-  type: string;
+  type: "webhook" | "email";
   webhook: string;
+  email: string;
 }
 
 export interface Check {
@@ -44,4 +58,5 @@ export interface Monitor {
   notification: Notification | null;
   totalChecks: number;
   successfulChecks: number;
+  headers: Headers[];
 }

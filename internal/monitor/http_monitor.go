@@ -27,6 +27,10 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 
 	logger.Debug("HTTP handler '%s' sending request to %s", m.Name, m.Connection)
 
+	for _, header := range m.HttpMonitorHeaders {
+		req.Header.Add(header.Key, header.Value)
+	}
+
 	start := time.Now()
 	resp, err := h.Client.Do(req)
 	duration := time.Since(start).Milliseconds()
@@ -42,10 +46,10 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 
 	var bodyMsg string
 	if resp.StatusCode >= 400 || m.AlwaysSave {
-		limitReader := io.LimitReader(resp.Body, 1024*64)
+		limitReader := io.LimitReader(resp.Body, 1024) // 1024 byte limit
 		bodyBytes, readErr := io.ReadAll(limitReader)
 		if readErr == nil && len(bodyBytes) > 0 {
-			bodyMsg = "\n\n" + string(bodyBytes)
+			bodyMsg = string(bodyBytes)
 		}
 	}
 
@@ -54,10 +58,9 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 		return errMsg + bodyMsg, duration, fmt.Errorf("http status %d", resp.StatusCode)
 	}
 
-	successMsg := fmt.Sprintf("HTTP %d %s after %dms from %s", resp.StatusCode, http.StatusText(resp.StatusCode), duration, m.Connection)
 	if m.AlwaysSave {
-		successMsg += bodyMsg
+		return bodyMsg, duration, nil
 	}
 
-	return successMsg, duration, nil
+	return "", duration, nil
 }

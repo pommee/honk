@@ -14,6 +14,7 @@ import { MonitorFormDialog } from "./edit-monitor-dialog";
 interface Props {
   monitor: Monitor | null;
   hasMonitors: boolean;
+  onRunNow?: (id: number) => void;
   onDeleted?: (id: number) => void;
   onUpdated?: (id: number) => void;
   onCreateNew?: () => void;
@@ -22,6 +23,7 @@ interface Props {
 export function MonitorDetail({
   monitor,
   hasMonitors,
+  onRunNow,
   onDeleted,
   onUpdated,
   onCreateNew
@@ -35,21 +37,16 @@ export function MonitorDetail({
     enabled: monitor?.enabled ?? false,
     name: monitor?.name ?? "",
     connection: monitor?.connection ?? "",
-    connectionType:
-      (monitor?.connectionType as "http" | "ping" | "container" | "tcp") ??
-      "http",
+    connectionType: monitor?.connectionType ?? "http",
     interval: monitor?.interval ?? 60,
     alwaysSave: monitor?.alwaysSave ?? false,
-    notification: monitor?.notification
-      ? {
-          enabled: monitor.notification.enabled,
-          webhook: monitor.notification.webhook
-        }
-      : undefined
+    headers: monitor?.headers ?? [],
+    notification: monitor?.notification ?? null
   });
 
   useEffect(() => {
     if (!monitor || isEditModalOpen) return;
+
     setForm({
       id: monitor.id,
       enabled: monitor.enabled,
@@ -58,6 +55,7 @@ export function MonitorDetail({
       connectionType: monitor.connectionType,
       interval: monitor.interval,
       alwaysSave: monitor.alwaysSave,
+      headers: monitor.headers ?? [],
       notification: monitor.notification
     });
   }, [monitor, isEditModalOpen]);
@@ -121,14 +119,13 @@ export function MonitorDetail({
       <div className="p-8 max-w-6xl mx-auto">
         <MonitorHeader
           monitor={monitor}
+          onRun={() => onRunNow?.(monitor.id)}
           onEdit={() => setIsEditModalOpen(true)}
           onDelete={() => setIsDeleteModalOpen(true)}
         />
 
         <MonitorStats monitor={monitor} />
-
         <MonitorTarget monitor={monitor} onCopy={copyTarget} />
-
         <MonitorChecksChart checks={monitor.checks} />
 
         <DeleteMonitorDialog

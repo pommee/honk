@@ -8,40 +8,42 @@ import { toast } from "sonner";
 import { mapApiMonitor } from "@/lib/monitors";
 import { useMonitorPolling } from "@/hooks/useMonitorPolling";
 import { MonitorSidebar } from "@/components/monitor/monitor-sidebar";
-import { Monitor, MonitorForm } from "@/types";
+import { DefaultMonitorForm, Monitor, MonitorForm } from "@/types";
 import { MonitorDetail } from "@/components/monitor/monitor-detail";
 import { MonitorFormDialog } from "@/components/monitor/edit-monitor-dialog";
+
+const SELECTED_MONITOR_KEY = "selectedMonitorId";
 
 export default function Home() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [selected, setSelected] = useState<Monitor | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [form, setForm] = useState<MonitorForm>({
-    enabled: true,
-    name: "",
-    connection: "",
-    connectionType: "http",
-    interval: 60,
-    alwaysSave: false,
-    notification: undefined
-  });
+  const [form, setForm] = useState<MonitorForm>(DefaultMonitorForm);
 
   const refreshMonitor = useCallback(async (id: number) => {
     const [code, response] = await GetRequest(`monitor/${id}`);
     if (code !== 200) return;
 
-    const updated = mapApiMonitor(response);
-
-    setMonitors((prev) => prev.map((m) => (m.id === id ? updated : m)));
+    setMonitors((prev) => prev.map((m) => (m.id === id ? response : m)));
 
     setSelected((prev) => {
       if (prev?.id === id) {
-        return updated;
+        return response;
       }
       return prev;
     });
   }, []);
+
+  const runMonitorNow = async (id: number) => {
+    const [code] = await PostRequest(`monitor/${id}/run`, null);
+    if (code !== 200) {
+      toast.error("Failed to run monitor");
+      return;
+    }
+
+    await refreshMonitor(id);
+  };
 
   useEffect(() => {
     (async () => {
@@ -51,12 +53,27 @@ export default function Home() {
         return;
       }
 
-      const mapped = Object.values(response).map(mapApiMonitor);
-      setMonitors(mapped);
+      const monitors = Object.values(response as Record<string, Monitor>);
+      setMonitors(monitors);
 
-      if (mapped.length > 0) {
-        setSelected(mapped[0]);
-        await refreshMonitor(mapped[0].id);
+      const savedId = localStorage.getItem(SELECTED_MONITOR_KEY);
+      let selected: Monitor | undefined;
+
+      if (savedId) {
+        const monitorId = Number(savedId);
+        selected = monitors.find((m) => m.id === monitorId);
+        if (!selected) {
+          localStorage.removeItem(SELECTED_MONITOR_KEY);
+        }
+      }
+
+      if (!selected && monitors.length > 0) {
+        selected = monitors[0];
+      }
+
+      if (selected) {
+        setSelected(selected);
+        await refreshMonitor(selected.id);
       }
     })();
   }, [refreshMonitor]);
@@ -71,7 +88,8 @@ export default function Home() {
       connectionType: "http",
       interval: 60,
       alwaysSave: false,
-      notification: undefined
+      notification: undefined,
+      headers: []
     });
     setIsAddOpen(true);
   };
@@ -100,6 +118,7 @@ export default function Home() {
       });
 
       setSelected(newMonitor);
+      localStorage.setItem(SELECTED_MONITOR_KEY, newMonitor.id.toString());
       await refreshMonitor(newMonitor.id);
 
       setIsAddOpen(false);
@@ -112,7 +131,11 @@ export default function Home() {
 
   const handleMonitorDeleted = (id: number) => {
     setMonitors((prev) => prev.filter((m) => m.id !== id));
-    if (selected?.id === id) setSelected(null);
+    if (selected?.id === id) {
+      setSelected(null);
+      // Remove from localStorage when the selected monitor is deleted
+      localStorage.removeItem(SELECTED_MONITOR_KEY);
+    }
   };
 
   const handleMonitorUpdated = async (id: number) => {
@@ -122,6 +145,7 @@ export default function Home() {
   const handleSelectMonitor = useCallback(
     async (monitor: Monitor) => {
       setSelected(monitor);
+      localStorage.setItem(SELECTED_MONITOR_KEY, monitor.id.toString());
       await refreshMonitor(monitor.id);
     },
     [refreshMonitor]
@@ -143,6 +167,7 @@ export default function Home() {
           <MonitorDetail
             monitor={selected}
             hasMonitors={monitors.length > 0}
+            onRunNow={runMonitorNow}
             onDeleted={handleMonitorDeleted}
             onUpdated={handleMonitorUpdated}
             onCreateNew={handleCreateNewMonitor}

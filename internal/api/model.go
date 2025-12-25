@@ -10,6 +10,9 @@ type NewMonitor struct {
 	Interval       int                     `json:"interval" binding:"required"`
 	AlwaysSave     *bool                   `json:"alwaysSave" binding:"required"`
 	Notification   database.Notification   `json:"notification"`
+
+	// Headers used for the http monitor
+	HttpMonitorHeaders []database.HttpMonitorHeader `json:"headers"`
 }
 
 type UpdateMonitor struct {

@@ -90,18 +90,13 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
           <ResponsiveContainer width="100%" height={200}>
             <BarChart
               data={chartData}
-              margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+              margin={{ top: 0, right: 0, bottom: 0, left: 10 }}
             >
-              <XAxis
-                dataKey="id"
-                tick={false}
-                axisLine={{ stroke: "#e5e7eb" }}
-              />
+              <XAxis dataKey="id" tick={false} />
               <YAxis
                 dataKey="responseTimeMs"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 10 }}
                 tickFormatter={(value) => `${value}ms`}
-                axisLine={{ stroke: "#e5e7eb" }}
                 width={45}
               />
               <Tooltip

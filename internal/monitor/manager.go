@@ -54,7 +54,7 @@ func NewManager(db *gorm.DB) *Manager {
 
 func (m *Manager) loadMonitorsFromDB() {
 	var dbMonitors []database.Monitor
-	if err := m.db.Preload("Checks").Find(&dbMonitors).Error; err != nil {
+	if err := m.db.Preload(clause.Associations).Find(&dbMonitors).Error; err != nil {
 		logger.Error("failed to load monitors from database: %v", err)
 		return
 	}
@@ -121,6 +121,7 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 	existing.Interval = mon.Interval
 	existing.AlwaysSave = mon.AlwaysSave
 	existing.ConnectionType = mon.ConnectionType
+	existing.HttpMonitorHeaders = mon.HttpMonitorHeaders
 
 	m.mu.Unlock()
 
@@ -168,6 +169,33 @@ func (m *Manager) GetMonitor(id int) *database.Monitor {
 		return nil
 	}
 	return &mon
+}
+
+// Can be used to run a monitor separately from the scheduled one
+func (m *Manager) RunMonitor(id int) (*database.Monitor, error) {
+	m.mu.Lock()
+	mon, exists := m.monitors[id]
+	if !exists {
+		m.mu.Unlock()
+		return nil, fmt.Errorf("monitor %d not found", id)
+	}
+
+	if !mon.Enabled {
+		m.mu.Unlock()
+		return nil, fmt.Errorf("monitor %d is disabled", id)
+	}
+
+	ctx := context.Background()
+	m.mu.Unlock()
+
+	m.runCheck(ctx, id)
+
+	updated := m.GetMonitor(id)
+	if updated == nil {
+		return nil, fmt.Errorf("failed to reload monitor %d", id)
+	}
+
+	return updated, nil
 }
 
 func (m *Manager) ListMonitors() map[int]*database.Monitor {

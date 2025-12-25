@@ -37,13 +37,13 @@ export const MonitorSidebar = ({
         <button
           key={m.id}
           onClick={() => onSelect(m)}
-          className={`w-full border p-4 text-left hover:border-primary cursor-pointer ${
+          className={`w-full border p-2 text-left hover:border-primary cursor-pointer ${
             selected?.id === m.id ? "border-primary" : ""
           }`}
         >
           <div className="flex justify-between">
-            <div className="flex gap-3">
-              <div className="p-2 bg-background rounded-lg shadow-sm">
+            <div className="flex gap-2">
+              <div className="py-1.5">
                 {connectionTypeIcon(m.connectionType)}
               </div>
               <div>

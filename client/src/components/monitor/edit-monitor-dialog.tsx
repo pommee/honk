@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MonitorForm } from "@/types";
+import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
 
 interface MonitorFormDialogProps {
   open: boolean;
@@ -54,6 +55,7 @@ export function MonitorFormDialog({
   };
 
   const notification = form.notification || { enabled: false };
+  const headers = form.headers || [];
 
   const handleFormChange = (
     updater: ((prev: MonitorForm) => MonitorForm) | MonitorForm
@@ -63,6 +65,35 @@ export function MonitorFormDialog({
     } else {
       onFormChange(updater);
     }
+  };
+
+  const addHeader = () => {
+    handleFormChange((prev) => ({
+      ...prev,
+      headers: [...(prev.headers || []), { key: "", value: "" }]
+    }));
+  };
+
+  const removeHeader = (index: number) => {
+    handleFormChange((prev) => ({
+      ...prev,
+      headers: (prev.headers || []).filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateHeader = (
+    index: number,
+    field: "key" | "value",
+    value: string
+  ) => {
+    handleFormChange((prev) => {
+      const updatedHeaders = [...(prev.headers || [])];
+      updatedHeaders[index] = {
+        ...updatedHeaders[index],
+        [field]: value
+      };
+      return { ...prev, headers: updatedHeaders };
+    });
   };
 
   return (
@@ -140,6 +171,71 @@ export function MonitorFormDialog({
               </TabsList>
             </Tabs>
           </div>
+
+          {form.connectionType === "http" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>HTTP Headers</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addHeader}
+                  className="h-8"
+                >
+                  <PlusIcon className="h-4 w-4 mr-1" />
+                  Add Header
+                </Button>
+              </div>
+
+              {headers.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic p-2 border rounded-md bg-muted/50">
+                  No headers added. Click "Add Header" to include custom headers
+                  in the request.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {headers.map((header, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Header name (e.g., Authorization)"
+                          value={header.key}
+                          onChange={(e) =>
+                            updateHeader(index, "key", e.target.value)
+                          }
+                          className="text-ellipsis"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Header value"
+                          value={header.value}
+                          onChange={(e) =>
+                            updateHeader(index, "value", e.target.value)
+                          }
+                          className="text-ellipsis"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeHeader(index)}
+                        className="h-9 w-9 shrink-0"
+                      >
+                        <TrashIcon className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    These headers will be included in every HTTP request to the
+                    target.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-3">
             <Label>Check Interval</Label>

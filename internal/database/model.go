@@ -25,9 +25,12 @@ type Monitor struct {
 	TotalChecks      int            `json:"totalChecks"`
 	SuccessfulChecks int            `json:"successfulChecks"`
 
-	Notification Notification `gorm:"foreignKey:MonitorID" json:"notification,omitzero"`
+	// Optional fields depending on the connection type
+	HttpMonitorHeaders []HttpMonitorHeader `gorm:"foreignKey:MonitorID" json:"headers"`
 
-	Checks []MonitorCheck `gorm:"foreignKey:MonitorID" json:"checks"`
+	// Related database fields
+	Notification Notification   `gorm:"foreignKey:MonitorID" json:"notification,omitzero"`
+	Checks       []MonitorCheck `gorm:"foreignKey:MonitorID" json:"checks"`
 }
 
 type MonitorCheck struct {
@@ -48,4 +51,11 @@ type Notification struct {
 	Type      string `json:"type"`
 	Webhook   string `json:"webhook"`
 	Email     string `json:"email"`
+}
+
+type HttpMonitorHeader struct {
+	ID        uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	MonitorID uint   `gorm:"index;not null" json:"-"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
 }

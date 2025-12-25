@@ -6,12 +6,14 @@ import TimeAgo from "react-timeago";
 
 interface MonitorHeaderProps {
   monitor: Monitor;
+  onRun: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
 export function MonitorHeader({
   monitor,
+  onRun,
   onEdit,
   onDelete
 }: MonitorHeaderProps) {
@@ -51,6 +53,9 @@ export function MonitorHeader({
           </div>
         </div>
         <div className="flex gap-3">
+          <Button size="lg" variant={"default"} onClick={onRun}>
+            Run now
+          </Button>
           <Button size="lg" variant="outline" onClick={onEdit}>
             Edit Monitor
           </Button>
