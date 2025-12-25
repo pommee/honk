@@ -9,26 +9,51 @@ import {
 } from "@/components/ui/drawer";
 import {
   ResponsiveContainer,
-  ScatterChart,
-  Scatter,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   Cell
 } from "recharts";
-import { CheckTooltip } from "./check-tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Check } from "@/types";
-import { Badge } from "../ui/badge";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface MonitorChecksChartProps {
   checks: Check[];
 }
 
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-background border rounded-lg shadow-lg p-3">
+        <p className="text-sm font-medium">
+          {data.success ? "✓ Success" : "✗ Failed"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {new Date(data.created).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false
+          })}
+        </p>
+        <p className="text-xs font-medium mt-1">{data.responseTimeMs}ms</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCheck, setSelectedCheck] = useState<Check | null>(null);
 
-  const handleCellClick = (check: Check) => {
+  const handleBarClick = (check: Check) => {
     setSelectedCheck(check);
     setIsDrawerOpen(true);
   };
@@ -48,10 +73,11 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
 
   const chartData = checks.map((check, idx) => ({
     id: idx,
-    y: 0,
+    responseTimeMs: check.responseTimeMs || 0,
     success: check.success,
     result: check.result || "",
-    created: check.created
+    created: check.created,
+    checkData: check
   }));
 
   return (
@@ -61,50 +87,60 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
           <CardTitle>Recent Checks</CardTitle>
         </CardHeader>
         <CardContent className="overflow-y-clip">
-          <ResponsiveContainer width="100%" height={100}>
-            <ScatterChart margin={{ top: 0, right: 20, bottom: 0, left: 20 }}>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            >
               <XAxis
-                type="number"
                 dataKey="id"
                 tick={false}
-                interval={0}
-                domain={[0, checks.length - 1]}
+                axisLine={{ stroke: "#e5e7eb" }}
               />
-              <YAxis type="number" dataKey="y" hide domain={[0, 1]} />
+              <YAxis
+                dataKey="responseTimeMs"
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) => `${value}ms`}
+                axisLine={{ stroke: "#e5e7eb" }}
+                width={45}
+              />
               <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: "rgba(0,0,0,0.2)" }}
                 animationDuration={0}
-                content={<CheckTooltip />}
-                cursor={{ stroke: "transparent" }}
               />
-              <Scatter data={chartData}>
-                {checks.map((check, idx) => (
+              <Bar
+                dataKey="responseTimeMs"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={20}
+                minPointSize={10}
+              >
+                {chartData.map((data, idx) => (
                   <Cell
                     key={idx}
                     fill={
-                      check.success ? "hsl(120, 70%, 50%)" : "hsl(0, 70%, 50%)"
+                      data.success
+                        ? "oklch(72.3% 0.219 149.579)"
+                        : "oklch(63.7% 0.237 25.331)"
                     }
-                    r={5}
                     style={{ cursor: "pointer" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCellClick(check);
-                    }}
+                    onClick={() => handleBarClick(data.checkData)}
                   />
                 ))}
-              </Scatter>
-            </ScatterChart>
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Click on any point to view details
+            Click on any bar to view details • Height represents response time
           </p>
         </CardContent>
       </Card>
 
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent>
-          <div className="mx-auto w-full max-w-2/3">
+          <div className="mx-auto w-full max-w-2xl">
             <DrawerHeader>
-              <DrawerTitle></DrawerTitle>
+              <DrawerTitle>Check Details</DrawerTitle>
               <DrawerDescription>
                 Detailed information about this check
               </DrawerDescription>
@@ -120,37 +156,42 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
                         variant={
                           selectedCheck.success ? "default" : "destructive"
                         }
-                        className={selectedCheck.success ? "bg-green-500" : ""}
+                        className={selectedCheck.success ? "bg-green-600" : ""}
                       >
                         {selectedCheck.success ? "Success" : "Failed"}
                       </Badge>
                     </div>
 
                     <div className="text-right space-y-1">
-                      <p className="text-sm font-medium">Timestamp</p>
+                      <p className="text-sm font-medium">Response Time</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(selectedCheck.created).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: false
-                          }
-                        )}
+                        {selectedCheck.responseTimeMs}ms
                       </p>
                     </div>
                   </div>
 
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Timestamp</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedCheck.created).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false
+                      })}
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Result</p>
-                    <div className="bg-muted rounded-md p-4">
+                    <ScrollArea className="h-72 w-full bg-muted rounded-md border p-1">
                       <pre className="text-xs whitespace-pre-wrap wrap-break-words">
                         {selectedCheck.result || "No result data available"}
                       </pre>
-                    </div>
+                    </ScrollArea>
                   </div>
 
                   <div className="space-y-2">

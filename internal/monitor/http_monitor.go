@@ -19,17 +19,20 @@ func NewHTTPPingHandler(timeout time.Duration) *HTTPPingHandler {
 	}
 }
 
-func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (string, error) {
+func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (string, int64, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, m.Connection, nil)
 	if err != nil {
-		return fmt.Sprintf("Failed to create request to %s: %v", m.Connection, err), err
+		return fmt.Sprintf("Failed to create request to %s: %v", m.Connection, err), 0, err
 	}
 
 	logger.Debug("HTTP handler '%s' sending request to %s", m.Name, m.Connection)
 
+	start := time.Now()
 	resp, err := h.Client.Do(req)
+	duration := time.Since(start).Milliseconds()
+
 	if err != nil {
-		return fmt.Sprintf("Request to %s failed: %v", m.Connection, err), err
+		return fmt.Sprintf("Request to %s failed after %dms: %v", m.Connection, duration, err), duration, err
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -37,29 +40,24 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 		}
 	}()
 
-	if resp.StatusCode >= 400 {
-		errMsg := fmt.Sprintf("HTTP %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-
-		bodyBytes, readErr := io.ReadAll(io.LimitReader(resp.Body, 1024*64)) // limit to 64KB
+	var bodyMsg string
+	if resp.StatusCode >= 400 || m.AlwaysSave {
+		limitReader := io.LimitReader(resp.Body, 1024*64)
+		bodyBytes, readErr := io.ReadAll(limitReader)
 		if readErr == nil && len(bodyBytes) > 0 {
-			errMsg += "\n\n" + string(bodyBytes)
+			bodyMsg = "\n\n" + string(bodyBytes)
 		}
-
-		return errMsg, fmt.Errorf("http status %d", resp.StatusCode)
 	}
 
-	successMsg := fmt.Sprintf("HTTP %d %s from %s", resp.StatusCode, http.StatusText(resp.StatusCode), m.Connection)
+	if resp.StatusCode >= 400 {
+		errMsg := fmt.Sprintf("HTTP %d %s after %dms from %s", resp.StatusCode, http.StatusText(resp.StatusCode), duration, m.Connection)
+		return errMsg + bodyMsg, duration, fmt.Errorf("http status %d", resp.StatusCode)
+	}
 
+	successMsg := fmt.Sprintf("HTTP %d %s after %dms from %s", resp.StatusCode, http.StatusText(resp.StatusCode), duration, m.Connection)
 	if m.AlwaysSave {
-		bodyBytes, readErr := io.ReadAll(resp.Body)
-		if readErr != nil {
-			logger.Warning("Could not read body from successful request: %v", readErr)
-			return successMsg + "\n\n<failed to read body>", nil
-		}
-		if len(bodyBytes) > 0 {
-			successMsg += "\n\n" + string(bodyBytes)
-		}
+		successMsg += bodyMsg
 	}
 
-	return successMsg, nil
+	return successMsg, duration, nil
 }

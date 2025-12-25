@@ -17,7 +17,13 @@ export function MonitorStats({ monitor }: MonitorStatsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-4xl font-bold text-green-600">{monitor.uptime}%</p>
+          <p className="text-4xl font-bold text-green-600">
+            {(
+              (monitor.successfulChecks / monitor.totalChecks) *
+              100
+            ).toPrecision(4)}
+            %
+          </p>
         </CardContent>
       </Card>
       <Card className="hover:shadow-md transition-shadow">

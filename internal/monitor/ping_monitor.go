@@ -19,11 +19,12 @@ func NewICMPPingHandler(timeout time.Duration) *ICMPPingHandler {
 	}
 }
 
-func (h *ICMPPingHandler) Check(ctx context.Context, m *database.Monitor) (string, error) {
+func (h *ICMPPingHandler) Check(ctx context.Context, m *database.Monitor) (string, int64, error) {
 	host := m.Connection
 
 	var cmd *exec.Cmd
 
+	start := time.Now()
 	switch runtime.GOOS {
 	case "darwin":
 		cmd = exec.CommandContext(
@@ -47,6 +48,7 @@ func (h *ICMPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 			host,
 		)
 	}
+	duration := time.Since(start).Milliseconds()
 
 	logger.Debug("ICMP handler '%s' pinging %s", m.Name, host)
 
@@ -56,12 +58,12 @@ func (h *ICMPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 			"Ping to %s failed\n\n%s",
 			host,
 			string(output),
-		), err
+		), duration, err
 	}
 
 	return fmt.Sprintf(
 		"Ping to %s successful\n\n%s",
 		host,
 		string(output),
-	), nil
+	), duration, nil
 }

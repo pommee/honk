@@ -6,7 +6,8 @@ export function mapApiMonitor(apiMonitor: Monitor): Monitor {
     checks: apiMonitor.checks?.map((c: Check) => ({
       success: c.success,
       result: c.result || "",
-      created: c.created
+      created: c.created,
+      responseTimeMs: c.responseTimeMs
     }))
   };
 }

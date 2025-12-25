@@ -26,6 +26,7 @@ export interface Check {
   created: string;
   success: boolean;
   result: string;
+  responseTimeMs: number;
 }
 
 export interface Monitor {
@@ -36,10 +37,11 @@ export interface Monitor {
   connectionType: "http" | "ping" | "container" | "tcp";
   interval: number;
   healthy: boolean | null;
-  uptime: number;
   alwaysSave: boolean;
   checked: string;
   checks: Check[];
   result: string;
   notification: Notification | null;
+  totalChecks: number;
+  successfulChecks: number;
 }

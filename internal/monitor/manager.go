@@ -15,7 +15,7 @@ import (
 var logger = internal.GetLogger()
 
 type Handler interface {
-	Check(ctx context.Context, m *database.Monitor) (string, error)
+	Check(ctx context.Context, m *database.Monitor) (string, int64, error)
 }
 
 type monitorRunner struct {
@@ -28,7 +28,7 @@ type Manager struct {
 	mu       sync.Mutex
 	monitors map[int]*database.Monitor
 	runners  map[int]*monitorRunner
-	handlers map[ConnectionType]Handler
+	handlers map[database.ConnectionType]Handler
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -42,7 +42,7 @@ func NewManager(db *gorm.DB) *Manager {
 		db:       db,
 		monitors: make(map[int]*database.Monitor),
 		runners:  make(map[int]*monitorRunner),
-		handlers: make(map[ConnectionType]Handler),
+		handlers: make(map[database.ConnectionType]Handler),
 		ctx:      ctx,
 		cancel:   cancel,
 	}
@@ -68,7 +68,7 @@ func (m *Manager) loadMonitorsFromDB() {
 	logger.Info("%d monitors loaded from database", len(dbMonitors))
 }
 
-func (m *Manager) RegisterHandler(ct ConnectionType, h Handler) {
+func (m *Manager) RegisterHandler(ct database.ConnectionType, h Handler) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.handlers[ct] = h
@@ -82,7 +82,7 @@ func (m *Manager) AddMonitor(mon *database.Monitor) (*database.Monitor, error) {
 		return nil, fmt.Errorf("monitor %q already exists", mon.Name)
 	}
 
-	if _, ok := m.handlers[ConnectionType(mon.ConnectionType)]; !ok {
+	if _, ok := m.handlers[database.ConnectionType(mon.ConnectionType)]; !ok {
 		return nil, fmt.Errorf("no handler for connection type %s", mon.ConnectionType)
 	}
 
@@ -255,7 +255,7 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		return
 	}
 
-	handler := m.handlers[ConnectionType(mon.ConnectionType)]
+	handler := m.handlers[database.ConnectionType(mon.ConnectionType)]
 	m.mu.Unlock()
 
 	if handler == nil {
@@ -263,9 +263,9 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	}
 
 	var (
-		start         = time.Now()
-		response, err = handler.Check(ctx, mon)
-		result        = response
+		start                       = time.Now()
+		response, responseTime, err = handler.Check(ctx, mon)
+		result                      = response
 	)
 
 	if err != nil {
@@ -284,15 +284,12 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		mon.SuccessfulChecks++
 	}
 
-	if mon.TotalChecks > 0 {
-		mon.Uptime = (float32(mon.SuccessfulChecks) / float32(mon.TotalChecks)) * 100
-	}
-
 	check := &database.MonitorCheck{
-		MonitorID: mon.ID,
-		Created:   start,
-		Success:   healthy,
-		Result:    result,
+		MonitorID:      mon.ID,
+		Created:        start,
+		Success:        healthy,
+		Result:         result,
+		ResponseTimeMs: responseTime,
 	}
 
 	if dbErr := m.db.Create(check).Error; dbErr != nil {

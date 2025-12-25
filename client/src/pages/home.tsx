@@ -35,7 +35,12 @@ export default function Home() {
 
     setMonitors((prev) => prev.map((m) => (m.id === id ? updated : m)));
 
-    setSelected((prev) => (prev?.id === id ? updated : prev));
+    setSelected((prev) => {
+      if (prev?.id === id) {
+        return updated;
+      }
+      return prev;
+    });
   }, []);
 
   useEffect(() => {
@@ -114,6 +119,14 @@ export default function Home() {
     await refreshMonitor(id);
   };
 
+  const handleSelectMonitor = useCallback(
+    async (monitor: Monitor) => {
+      setSelected(monitor);
+      await refreshMonitor(monitor.id);
+    },
+    [refreshMonitor]
+  );
+
   return (
     <div className="flex h-screen flex-col">
       <SiteHeader />
@@ -122,7 +135,7 @@ export default function Home() {
         <MonitorSidebar
           monitors={monitors}
           selected={selected}
-          onSelect={setSelected}
+          onSelect={handleSelectMonitor}
           onAdd={handleCreateNewMonitor}
         />
 

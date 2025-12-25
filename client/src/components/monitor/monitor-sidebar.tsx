@@ -57,7 +57,9 @@ export const MonitorSidebar = ({
           </div>
 
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Uptime: {(m.uptime ?? 0).toFixed(2)}%</span>
+            <span>
+              Uptime: {((m.successfulChecks / m.totalChecks) * 100).toFixed(2)}%
+            </span>
             <span>•</span>
             {m.enabled ? (
               <TimeAgoWithInterval date={m.checked} interval={m.interval} />
