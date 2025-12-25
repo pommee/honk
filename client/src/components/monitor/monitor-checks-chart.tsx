@@ -19,9 +19,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Check } from "@/types";
 import { ScrollArea } from "../ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 interface MonitorChecksChartProps {
   checks: Check[];
+  itemsPerPage?: number;
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -43,20 +46,50 @@ const CustomTooltip = ({ active, payload }: any) => {
           })}
         </p>
         <p className="text-xs font-medium mt-1">{data.responseTimeMs}ms</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Check #{data.originalIndex + 1}
+        </p>
       </div>
     );
   }
   return null;
 };
 
-export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
+export function MonitorChecksChart({
+  checks,
+  itemsPerPage = 50
+}: MonitorChecksChartProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCheck, setSelectedCheck] = useState<Check | null>(null);
+  const totalPages = Math.ceil(checks.length / itemsPerPage);
+  const [currentPage, setCurrentPage] = useState(
+    totalPages > 0 ? totalPages : 1
+  );
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, checks.length);
+  const currentChecks = checks.slice(startIndex, endIndex);
+
+  const chartData = currentChecks.map((check, idx) => ({
+    id: `#${startIndex + idx + 1}`,
+    responseTimeMs: check.responseTimeMs || 0,
+    success: check.success,
+    result: check.result || "",
+    created: check.created,
+    checkData: check,
+    originalIndex: startIndex + idx
+  }));
 
   const handleBarClick = (check: Check) => {
     setSelectedCheck(check);
     setIsDrawerOpen(true);
   };
+
+  const handlePreviousPage = () =>
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const goToPage = (page: number) => setCurrentPage(page);
 
   if (!checks || checks.length === 0) {
     return (
@@ -71,20 +104,58 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
     );
   }
 
-  const chartData = checks.map((check, idx) => ({
-    id: idx,
-    responseTimeMs: check.responseTimeMs || 0,
-    success: check.success,
-    result: check.result || "",
-    created: check.created,
-    checkData: check
-  }));
+  const renderPageButtons = () => {
+    const buttons = [];
+
+    if (totalPages <= 5) {
+      // Show all pages
+      for (let i = 1; i <= totalPages; i++) buttons.push(i);
+    } else {
+      // Always show first page
+      buttons.push(1);
+
+      let startPage = Math.max(currentPage - 1, 2);
+      let endPage = Math.min(currentPage + 1, totalPages - 1);
+
+      if (currentPage === 1) endPage = 3;
+      if (currentPage === totalPages) startPage = totalPages - 2;
+
+      if (startPage > 2) buttons.push("..."); // left ellipsis
+
+      for (let i = startPage; i <= endPage; i++) buttons.push(i);
+
+      if (endPage < totalPages - 1) buttons.push("..."); // right ellipsis
+
+      buttons.push(totalPages);
+    }
+
+    return buttons.map((pageNum, idx) =>
+      pageNum === "..." ? (
+        <span key={idx} className="px-2 text-sm">
+          ...
+        </span>
+      ) : (
+        <Button
+          key={idx}
+          variant={currentPage === pageNum ? "default" : "ghost"}
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => goToPage(pageNum as number)}
+        >
+          {pageNum}
+        </Button>
+      )
+    );
+  };
 
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Recent Checks</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Showing {startIndex + 1}-{endIndex} of {checks.length}
+          </div>
         </CardHeader>
         <CardContent className="overflow-y-clip">
           <ResponsiveContainer width="100%" height={200}>
@@ -92,7 +163,7 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
               data={chartData}
               margin={{ top: 0, right: 0, bottom: 0, left: 10 }}
             >
-              <XAxis dataKey="id" tick={false} />
+              <XAxis dataKey="id" tick={{ fontSize: 10 }} interval={0} />
               <YAxis
                 dataKey="responseTimeMs"
                 tick={{ fontSize: 10 }}
@@ -101,13 +172,13 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
               />
               <Tooltip
                 content={<CustomTooltip />}
-                cursor={{ fill: "rgba(0,0,0,0.2)" }}
+                cursor={{ fill: "rgba(0,0,0,0.1)" }}
                 animationDuration={0}
               />
               <Bar
                 dataKey="responseTimeMs"
                 radius={[4, 4, 0, 0]}
-                maxBarSize={20}
+                maxBarSize={40}
                 minPointSize={10}
               >
                 {chartData.map((data, idx) => (
@@ -125,8 +196,39 @@ export function MonitorChecksChart({ checks }: MonitorChecksChartProps) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+              >
+                <CaretLeftIcon className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {renderPageButtons()}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                <CaretRightIcon className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </div>
+          </div>
+
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            Click on any bar to view details • Height represents response time
+            Click any bar for details • Height = response time
           </p>
         </CardContent>
       </Card>

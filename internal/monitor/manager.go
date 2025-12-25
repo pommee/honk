@@ -61,6 +61,11 @@ func (m *Manager) loadMonitorsFromDB() {
 
 	for i := range dbMonitors {
 		mon := &dbMonitors[i]
+
+		for j := range mon.Checks {
+			mon.Checks[j].Result = ""
+		}
+
 		m.monitors[int(mon.ID)] = mon
 		m.startMonitor(int(mon.ID))
 	}
