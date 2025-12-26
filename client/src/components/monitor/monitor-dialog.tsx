@@ -12,7 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { MonitorForm } from "@/types";
-import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
+import { ContainerConfig } from "./monitors/ContainerMonitor";
+import { HttpConfig } from "./monitors/HttpMonitor";
+import { PingConfig } from "./monitors/PingMonitor";
+import { TcpConfig } from "./monitors/TcpMonitor";
 
 interface MonitorFormDialogProps {
   open: boolean;
@@ -96,6 +99,30 @@ export function MonitorFormDialog({
     });
   };
 
+  const renderTypeSpecificConfig = () => {
+    switch (form.connectionType) {
+      case "http":
+        return (
+          <HttpConfig
+            form={form}
+            handleFormChange={handleFormChange}
+            headers={headers}
+            onAddHeader={addHeader}
+            onRemoveHeader={removeHeader}
+            onUpdateHeader={updateHeader}
+          />
+        );
+      case "ping":
+        return <PingConfig />;
+      case "tcp":
+        return <TcpConfig />;
+      case "container":
+        return <ContainerConfig />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg md:max-w-2xl">
@@ -109,13 +136,14 @@ export function MonitorFormDialog({
               : "Update the monitor configuration. Changes apply immediately."}
           </DialogDescription>
         </DialogHeader>
+
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="monitor-name">Name (optional)</Label>
             <Input
               id="monitor-name"
               placeholder="My Website"
-              value={form.name}
+              value={form.name ?? ""}
               onChange={(e) =>
                 handleFormChange((f) => ({ ...f, name: e.target.value }))
               }
@@ -128,7 +156,7 @@ export function MonitorFormDialog({
               id="monitor-url"
               placeholder={getPlaceholder()}
               required
-              value={form.connection}
+              value={form.connection ?? ""}
               onChange={(e) =>
                 handleFormChange((f) => ({ ...f, connection: e.target.value }))
               }
@@ -140,102 +168,22 @@ export function MonitorFormDialog({
             <Tabs
               value={form.connectionType}
               onValueChange={(v) =>
-                handleFormChange((f) => ({ ...f, connectionType: v }))
+                handleFormChange((f) => ({
+                  ...f,
+                  connectionType: v as MonitorForm["connectionType"]
+                }))
               }
             >
               <TabsList className="bg-transparent space-x-2">
-                <TabsTrigger
-                  value="http"
-                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
-                >
-                  HTTP(S)
-                </TabsTrigger>
-                <TabsTrigger
-                  value="ping"
-                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
-                >
-                  Ping
-                </TabsTrigger>
-                <TabsTrigger
-                  value="container"
-                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
-                >
-                  Container
-                </TabsTrigger>
-                <TabsTrigger
-                  value="tcp"
-                  className="border-l-0 !bg-transparent border-t-0 border-r-0 cursor-pointer data-[state=active]:border-b-2 data-[state=active]:!border-b-primary rounded-none"
-                >
-                  TCP
-                </TabsTrigger>
+                <TabsTrigger value="http">HTTP(S)</TabsTrigger>
+                <TabsTrigger value="ping">Ping</TabsTrigger>
+                <TabsTrigger value="container">Container</TabsTrigger>
+                <TabsTrigger value="tcp">TCP</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
-          {form.connectionType === "http" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>HTTP Headers</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addHeader}
-                  className="h-8"
-                >
-                  <PlusIcon className="h-4 w-4 mr-1" />
-                  Add Header
-                </Button>
-              </div>
-
-              {headers.length === 0 ? (
-                <div className="text-sm text-muted-foreground italic p-2 border rounded-md bg-muted/50">
-                  No headers added. Click "Add Header" to include custom headers
-                  in the request.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {headers.map((header, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Header name (e.g., Authorization)"
-                          value={header.key}
-                          onChange={(e) =>
-                            updateHeader(index, "key", e.target.value)
-                          }
-                          className="text-ellipsis"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Header value"
-                          value={header.value}
-                          onChange={(e) =>
-                            updateHeader(index, "value", e.target.value)
-                          }
-                          className="text-ellipsis"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeHeader(index)}
-                        className="h-9 w-9 shrink-0"
-                      >
-                        <TrashIcon className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </div>
-                  ))}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    These headers will be included in every HTTP request to the
-                    target.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          {renderTypeSpecificConfig()}
 
           <div className="space-y-3">
             <Label>Check Interval</Label>
@@ -260,15 +208,12 @@ export function MonitorFormDialog({
             <div className="flex items-center space-x-2">
               <Switch
                 id="monitor-enabled"
-                checked={form.enabled}
+                checked={form.enabled ?? true}
                 onCheckedChange={(checked) =>
                   handleFormChange((f) => ({ ...f, enabled: checked }))
                 }
               />
-              <Label
-                htmlFor="monitor-enabled"
-                className="text-sm font-medium leading-none"
-              >
+              <Label htmlFor="monitor-enabled" className="text-sm font-medium">
                 Enable monitor
               </Label>
             </div>
@@ -281,14 +226,14 @@ export function MonitorFormDialog({
             <div className="flex items-center space-x-2">
               <Switch
                 id="monitor-alwaysSave"
-                checked={form.alwaysSave}
+                checked={form.alwaysSave ?? false}
                 onCheckedChange={(checked) =>
                   handleFormChange((f) => ({ ...f, alwaysSave: checked }))
                 }
               />
               <Label
                 htmlFor="monitor-alwaysSave"
-                className="text-sm font-medium leading-none"
+                className="text-sm font-medium"
               >
                 Always save response
               </Label>
@@ -320,7 +265,7 @@ export function MonitorFormDialog({
                 />
                 <Label
                   htmlFor="monitor-notification"
-                  className="text-sm font-medium leading-none"
+                  className="text-sm font-medium"
                 >
                   Enable notifications
                 </Label>
@@ -335,7 +280,7 @@ export function MonitorFormDialog({
                 <div className="space-y-2">
                   <Label>Notification method</Label>
                   <ToggleGroup
-                    variant={"outline"}
+                    variant="outline"
                     type="single"
                     value={notification.type || "webhook"}
                     onValueChange={(value) =>
@@ -349,12 +294,8 @@ export function MonitorFormDialog({
                       }))
                     }
                   >
-                    <ToggleGroupItem value="webhook" aria-label="Webhook">
-                      Webhook
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="email" aria-label="Email">
-                      Email
-                    </ToggleGroupItem>
+                    <ToggleGroupItem value="webhook">Webhook</ToggleGroupItem>
+                    <ToggleGroupItem value="email">Email</ToggleGroupItem>
                   </ToggleGroup>
                 </div>
 
@@ -377,8 +318,7 @@ export function MonitorFormDialog({
                       }
                     />
                     <p className="text-xs text-muted-foreground">
-                      POST JSON payload will be sent on status changes (up →
-                      down or down → up).
+                      POST JSON payload will be sent on status changes.
                     </p>
                   </div>
                 ) : (

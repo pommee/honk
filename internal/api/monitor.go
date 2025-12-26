@@ -36,6 +36,7 @@ func (api *API) createMonitor(c *gin.Context) {
 		Enabled:            *req.Enabled,
 		Name:               req.Name,
 		ConnectionType:     req.ConnectionType,
+		HTTPMethod:         req.HTTPMethod,
 		Connection:         req.Connection,
 		Interval:           req.Interval,
 		AlwaysSave:         *req.AlwaysSave,

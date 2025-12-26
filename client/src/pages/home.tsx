@@ -10,7 +10,7 @@ import { useMonitorPolling } from "@/hooks/useMonitorPolling";
 import { MonitorSidebar } from "@/components/monitor/monitor-sidebar";
 import { DefaultMonitorForm, Monitor, MonitorForm } from "@/types";
 import { MonitorDetail } from "@/components/monitor/monitor-detail";
-import { MonitorFormDialog } from "@/components/monitor/edit-monitor-dialog";
+import { MonitorFormDialog } from "@/components/monitor/monitor-dialog";
 
 const SELECTED_MONITOR_KEY = "selectedMonitorId";
 
@@ -81,16 +81,7 @@ export default function Home() {
   useMonitorPolling({ monitors, refreshMonitor });
 
   const handleCreateNewMonitor = () => {
-    setForm({
-      enabled: true,
-      name: "",
-      connection: "",
-      connectionType: "http",
-      interval: 60,
-      alwaysSave: false,
-      notification: undefined,
-      headers: []
-    });
+    setForm(DefaultMonitorForm);
     setIsAddOpen(true);
   };
 

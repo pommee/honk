@@ -10,6 +10,7 @@ export type MonitorForm = {
   name: string;
   connection: string;
   connectionType: "http" | "ping" | "container" | "tcp";
+  httpMethod: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   interval: number;
   alwaysSave: boolean;
   headers: Headers[];
@@ -21,6 +22,7 @@ export const DefaultMonitorForm: MonitorForm = {
   name: "",
   connection: "",
   connectionType: "http",
+  httpMethod: "GET",
   interval: 60,
   alwaysSave: false,
   headers: [],
@@ -49,6 +51,7 @@ export interface Monitor {
   name: string;
   connection: string;
   connectionType: "http" | "ping" | "container" | "tcp";
+  httpMethod: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   interval: number;
   healthy: boolean | null;
   alwaysSave: boolean;

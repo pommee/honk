@@ -9,7 +9,7 @@ import { MonitorChecksChart } from "./monitor-checks-chart";
 import { DeleteMonitorDialog } from "./delete-monitor-dialog";
 import { Button } from "../ui/button";
 import { ActivityIcon, PlusCircleIcon } from "@phosphor-icons/react";
-import { MonitorFormDialog } from "./edit-monitor-dialog";
+import { MonitorFormDialog } from "./monitor-dialog";
 
 interface Props {
   monitor: Monitor | null;
@@ -38,6 +38,7 @@ export function MonitorDetail({
     name: monitor?.name ?? "",
     connection: monitor?.connection ?? "",
     connectionType: monitor?.connectionType ?? "http",
+    httpMethod: monitor?.httpMethod ?? "GET",
     interval: monitor?.interval ?? 60,
     alwaysSave: monitor?.alwaysSave ?? false,
     headers: monitor?.headers ?? [],
@@ -53,6 +54,7 @@ export function MonitorDetail({
       name: monitor.name,
       connection: monitor.connection,
       connectionType: monitor.connectionType,
+      httpMethod: monitor.httpMethod,
       interval: monitor.interval,
       alwaysSave: monitor.alwaysSave,
       headers: monitor.headers ?? [],
@@ -116,7 +118,7 @@ export function MonitorDetail({
 
   return (
     <main className="flex-1 overflow-y-auto">
-      <div className="p-8 max-w-6xl mx-auto">
+      <div className="p-4 max-w-6xl mx-auto space-y-4">
         <MonitorHeader
           monitor={monitor}
           onRun={() => onRunNow?.(monitor.id)}

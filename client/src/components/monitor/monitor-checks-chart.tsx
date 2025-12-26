@@ -23,11 +23,24 @@ import { Button } from "@/components/ui/button";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 interface MonitorChecksChartProps {
-  checks: Check[];
+  checks?: Check[];
   itemsPerPage?: number;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipPayload {
+  payload: {
+    created: string;
+    responseTimeMs: number;
+    originalIndex: number;
+  };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayload[];
+}
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -65,14 +78,30 @@ export function MonitorChecksChart({
   const [selectedCheck, setSelectedCheck] = useState<Check | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(checks.length / itemsPerPage);
+  const normalizedChecks: Check[] = checks ?? [];
+  const totalPages = Math.ceil(normalizedChecks.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, checks.length);
-  const currentChecks = checks.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + itemsPerPage, normalizedChecks.length);
+  const currentChecks = normalizedChecks.slice(startIndex, endIndex);
 
   useEffect(() => {
-    setCurrentPage(totalPages);
-  }, [checks]);
+    if (totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages]);
+
+  if (normalizedChecks.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Checks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">No check data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const chartData = currentChecks.map((check, idx) => ({
     id: `#${startIndex + idx + 1}`,
@@ -95,40 +124,25 @@ export function MonitorChecksChart({
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   const goToPage = (page: number) => setCurrentPage(page);
 
-  if (!checks || checks.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Checks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No check data available</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const renderPageButtons = () => {
     const buttons = [];
 
     if (totalPages <= 5) {
-      // Show all pages
       for (let i = 1; i <= totalPages; i++) buttons.push(i);
     } else {
-      // Always show first page
       buttons.push(1);
 
       let startPage = Math.max(currentPage - 1, 2);
       let endPage = Math.min(currentPage + 1, totalPages - 1);
 
-      if (currentPage === 1) endPage = 3;
-      if (currentPage === totalPages) startPage = totalPages - 2;
+      if (currentPage <= 2) endPage = 4;
+      if (currentPage >= totalPages - 1) startPage = totalPages - 3;
 
-      if (startPage > 2) buttons.push("..."); // left ellipsis
+      if (startPage > 2) buttons.push("...");
 
       for (let i = startPage; i <= endPage; i++) buttons.push(i);
 
-      if (endPage < totalPages - 1) buttons.push("..."); // right ellipsis
+      if (endPage < totalPages - 1) buttons.push("...");
 
       buttons.push(totalPages);
     }
@@ -158,7 +172,7 @@ export function MonitorChecksChart({
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Recent Checks</CardTitle>
           <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}-{endIndex} of {checks.length}
+            Showing {startIndex + 1}-{endIndex} of {normalizedChecks.length}
           </div>
         </CardHeader>
         <CardContent className="overflow-y-clip">

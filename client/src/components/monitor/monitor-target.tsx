@@ -10,7 +10,7 @@ interface MonitorTargetProps {
 
 export function MonitorTarget({ monitor, onCopy }: MonitorTargetProps) {
   return (
-    <Card className="mb-8">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">Target URL</CardTitle>
       </CardHeader>

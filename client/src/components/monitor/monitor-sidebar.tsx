@@ -37,8 +37,6 @@ export const MonitorSidebar = ({
         <button
           key={m.id}
           onClick={() => {
-            // Correct monitor clicked here
-            console.log(m);
             onSelect(m);
           }}
           className={`w-full border p-2 text-left hover:border-primary transition-colors cursor-pointer ${

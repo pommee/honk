@@ -20,7 +20,7 @@ func NewHTTPPingHandler(timeout time.Duration) *HTTPPingHandler {
 }
 
 func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (string, int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, m.Connection, nil)
+	req, err := http.NewRequestWithContext(ctx, m.HTTPMethod, m.Connection, nil)
 	if err != nil {
 		return fmt.Sprintf("Failed to create request to %s: %v", m.Connection, err), 0, err
 	}

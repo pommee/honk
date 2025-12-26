@@ -126,6 +126,7 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 	existing.Interval = mon.Interval
 	existing.AlwaysSave = mon.AlwaysSave
 	existing.ConnectionType = mon.ConnectionType
+	existing.HTTPMethod = mon.HTTPMethod
 	existing.HttpMonitorHeaders = mon.HttpMonitorHeaders
 
 	m.mu.Unlock()

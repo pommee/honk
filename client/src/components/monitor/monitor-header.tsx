@@ -19,7 +19,7 @@ export function MonitorHeader({
 }: MonitorHeaderProps) {
   return (
     <div
-      className={`relative bg-background rounded-2xl shadow-sm border-2 p-8 mb-8 ${
+      className={`relative bg-background rounded-2xl shadow-sm border-2 p-8 ${
         monitor.enabled ? "border-green-500" : "border-red-500"
       }`}
     >
