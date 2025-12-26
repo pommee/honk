@@ -48,7 +48,7 @@ func (api *API) createMonitor(c *gin.Context) {
 	if err != nil {
 		log.Warning("Failed to add monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
@@ -65,9 +65,9 @@ func (api *API) runMonitor(c *gin.Context) {
 
 	newMonitor, err := api.Manager.RunMonitor(id)
 	if err != nil {
-		log.Warning("Failed to add monitor: %v", err)
+		log.Warning("Failed to run monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
@@ -103,8 +103,14 @@ func (api *API) updateMonitor(c *gin.Context) {
 		return
 	}
 
-	err := api.Manager.UpdateMonitor(&database.Monitor{
-		ID:                 uint(req.ID),
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor id"})
+		return
+	}
+
+	err = api.Manager.UpdateMonitor(&database.Monitor{
+		ID:                 uint(id),
 		Enabled:            *req.Enabled,
 		Name:               req.Name,
 		Connection:         req.Connection,
@@ -120,7 +126,7 @@ func (api *API) updateMonitor(c *gin.Context) {
 	if err != nil {
 		log.Warning("Failed to update monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("%v", err),
+			"error": err.Error(),
 		})
 		return
 	}
@@ -142,7 +148,7 @@ func (api *API) deleteMonitor(c *gin.Context) {
 	err = api.Manager.RemoveMonitor(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("%v", err),
+			"error": err.Error(),
 		})
 		return
 	}
