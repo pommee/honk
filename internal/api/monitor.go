@@ -110,6 +110,7 @@ func (api *API) updateMonitor(c *gin.Context) {
 		ConnectionType:     req.ConnectionType,
 		Connection:         req.Connection,
 		Interval:           req.Interval,
+		Timeout:            req.Timeout,
 		AlwaysSave:         *req.AlwaysSave,
 		Notification:       req.Notification,
 		HttpMonitorHeaders: req.HttpMonitorHeaders,

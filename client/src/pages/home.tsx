@@ -95,6 +95,7 @@ export default function Home() {
       connection: monitor.connection,
       connectionType: monitor.connectionType,
       httpMethod: monitor.httpMethod,
+      timeout: monitor.timeout,
       interval: monitor.interval,
       alwaysSave: monitor.alwaysSave,
       headers: monitor.headers ?? [],

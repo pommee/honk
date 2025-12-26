@@ -18,6 +18,7 @@ type Monitor struct {
 	Connection       string         `json:"connection"`
 	ConnectionType   ConnectionType `json:"connectionType"`
 	HTTPMethod       string         `json:"httpMethod"`
+	Timeout          int            `json:"timeout"`
 	Interval         int            `json:"interval"`
 	Healthy          *bool          `json:"healthy"` // nil if unknown
 	AlwaysSave       bool           `json:"alwaysSave"`

@@ -21,7 +21,7 @@ func main() {
 		Manager: monitor.NewManager(db),
 	}
 	errorChan := make(chan struct{}, 1)
-	apiServer.Manager.RegisterHandler(database.ConnectionTypeHTTP, monitor.NewHTTPPingHandler(5))
+	apiServer.Manager.RegisterHandler(database.ConnectionTypeHTTP, monitor.NewHTTPPingHandler())
 	apiServer.Manager.RegisterHandler(database.ConnectionTypePing, monitor.NewICMPPingHandler(5))
 	apiServer.Manager.RegisterHandler(database.ConnectionTypeTCP, monitor.NewTCPPingHandler(5))
 

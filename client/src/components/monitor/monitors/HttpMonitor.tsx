@@ -64,6 +64,23 @@ export function HttpConfig({
         </ToggleGroup>
       </div>
 
+      <div className="space-y-2">
+        <Label>Timeout</Label>
+        <p className="text-muted-foreground text-sm mt-1">
+          Time in seconds to resolve before a timeout
+        </p>
+        <Input
+          type="number"
+          value={form.timeout}
+          onChange={(e) =>
+            handleFormChange((prev) => ({
+              ...prev,
+              timeout: Number(e.target.value)
+            }))
+          }
+        />
+      </div>
+
       <div className="space-y-3">
         <div>
           <div className="flex items-center justify-between">
