@@ -5,6 +5,7 @@ import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { MonitorForm } from "@/types";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 
 type HttpConfigProps = {
   form: MonitorForm;
@@ -79,6 +80,23 @@ export function HttpConfig({
             }))
           }
         />
+      </div>
+
+      <div className="space-y-3">
+        <Label>Body</Label>
+        <p className="text-muted-foreground text-sm">
+          Data sent as the message body in the request
+        </p>
+        <Textarea
+          value={form.body}
+          onChange={(e) =>
+            handleFormChange((prev) => ({
+              ...prev,
+              body: e.target.value
+            }))
+          }
+          placeholder='{&#10;  "key": "data"&#10;}'
+        ></Textarea>
       </div>
 
       <div className="space-y-3">

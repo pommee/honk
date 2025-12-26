@@ -87,6 +87,9 @@ export default function Home() {
     setViewMode("create");
   };
 
+  const sanitizeHeaders = (headers: MonitorForm["headers"]) =>
+    headers.filter((h) => h.key?.trim() !== "");
+
   const handleEditMonitor = (monitor: Monitor) => {
     setForm({
       id: monitor.id,
@@ -96,6 +99,7 @@ export default function Home() {
       connectionType: monitor.connectionType,
       httpMethod: monitor.httpMethod,
       timeout: monitor.timeout,
+      body: monitor.body,
       interval: monitor.interval,
       alwaysSave: monitor.alwaysSave,
       headers: monitor.headers ?? [],
@@ -107,7 +111,12 @@ export default function Home() {
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
-      const [code, response] = await PostRequest("monitor", form);
+      const payload = {
+        ...form,
+        headers: sanitizeHeaders(form.headers)
+      };
+
+      const [code, response] = await PostRequest("monitor", payload);
       if (code !== 200) {
         const errorText = await response.text();
         throw new Error(errorText || "Failed to create monitor");
@@ -143,9 +152,16 @@ export default function Home() {
     if (!selected) return;
     setIsSubmitting(true);
     try {
-      const [code, response] = await PutRequest(`monitor/${selected.id}`, {
-        ...form
-      });
+      const payload = {
+        ...form,
+        headers: sanitizeHeaders(form.headers)
+      };
+
+      const [code, response] = await PutRequest(
+        `monitor/${selected.id}`,
+        payload
+      );
+
       if (code !== 200) {
         const text = await response.error;
         throw new Error(text || "Failed to update monitor");

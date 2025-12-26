@@ -218,7 +218,7 @@ export function MonitorChecksChart({
             </BarChart>
           </ResponsiveContainer>
 
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -243,14 +243,14 @@ export function MonitorChecksChart({
               </Button>
             </div>
 
+            <p className="text-xs text-muted-foreground">
+              Click any bar for details • Height = response time
+            </p>
+
             <div className="text-sm text-muted-foreground">
               Page {currentPage} of {totalPages}
             </div>
           </div>
-
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Click any bar for details • Height = response time
-          </p>
         </CardContent>
       </Card>
 

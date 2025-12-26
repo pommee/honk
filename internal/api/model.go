@@ -9,6 +9,7 @@ type NewMonitor struct {
 	ConnectionType database.ConnectionType `json:"connectionType" binding:"required"`
 	HTTPMethod     string                  `json:"httpMethod"`
 	Timeout        int                     `json:"timeout"`
+	Body           string                  `json:"body"`
 	Interval       int                     `json:"interval" binding:"required"`
 	AlwaysSave     *bool                   `json:"alwaysSave" binding:"required"`
 	Notification   database.Notification   `json:"notification"`
