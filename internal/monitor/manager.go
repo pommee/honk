@@ -46,8 +46,11 @@ func NewManager(db *gorm.DB) *Manager {
 		cancel:   cancel,
 	}
 
-	mgr.loadMonitorsFromDB()
 	return mgr
+}
+
+func (m *Manager) Start() {
+	m.loadMonitorsFromDB()
 }
 
 func (m *Manager) loadMonitorsFromDB() {
@@ -79,30 +82,37 @@ func (m *Manager) RegisterHandler(ct database.ConnectionType, h Handler) {
 
 func (m *Manager) AddMonitor(mon *database.Monitor) (*database.Monitor, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	if _, exists := m.monitors[int(mon.ID)]; exists {
+		m.mu.Unlock()
 		return nil, fmt.Errorf("monitor %q already exists", mon.Name)
 	}
 
 	if _, ok := m.handlers[database.ConnectionType(mon.ConnectionType)]; !ok {
+		m.mu.Unlock()
 		return nil, fmt.Errorf("no handler registered for connection type %s", mon.ConnectionType)
 	}
 
 	for _, existing := range m.monitors {
 		if existing.Connection == mon.Connection {
+			m.mu.Unlock()
 			return nil, fmt.Errorf("a monitor already exists for connection %s", mon.Connection)
 		}
 	}
+
+	m.mu.Unlock()
 
 	if err := m.db.Create(mon).Error; err != nil {
 		return nil, fmt.Errorf("failed to save new monitor: %w", err)
 	}
 
+	m.mu.Lock()
 	m.monitors[int(mon.ID)] = mon
+	m.mu.Unlock()
+
 	m.startMonitor(int(mon.ID))
 
-	log.Info("new monitor added: %s (ID: %d)", mon.Name, mon.ID)
+	log.Info("New monitor added: %s", mon.Name)
 	return mon, nil
 }
 
@@ -177,6 +187,10 @@ func (m *Manager) GetMonitor(id int) *database.Monitor {
 			return nil
 		}
 		log.Error("failed to load monitor %d: %v", id, err)
+		return nil
+	}
+
+	if mon.ID == 0 {
 		return nil
 	}
 	return &mon
