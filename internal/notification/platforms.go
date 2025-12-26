@@ -1,20 +1,27 @@
 package notification
 
 type Platform string
+type Level string
 
 const (
 	Slack   Platform = "slack"
 	Discord Platform = "discord"
 	Teams   Platform = "teams"
+
+	Success Level = "success"
+	Warning Level = "warning"
+	Error   Level = "error"
 )
 
-func levelColor(level string) int {
+func levelColor(level Level) int {
 	switch level {
-	case "error":
+	case Error:
 		return 0xFF0000
-	case "warning":
+	case Warning:
 		return 0xFFA500
-	default:
+	case Success:
 		return 0x2ECC71
 	}
+
+	return 0
 }

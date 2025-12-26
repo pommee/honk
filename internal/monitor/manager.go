@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"honk/internal/database"
+	"honk/internal/notification"
+	"maps"
 	"sync"
 	"time"
 
@@ -45,7 +47,6 @@ func NewManager(db *gorm.DB) *Manager {
 	}
 
 	mgr.loadMonitorsFromDB()
-
 	return mgr
 }
 
@@ -85,48 +86,50 @@ func (m *Manager) AddMonitor(mon *database.Monitor) (*database.Monitor, error) {
 	}
 
 	if _, ok := m.handlers[database.ConnectionType(mon.ConnectionType)]; !ok {
-		return nil, fmt.Errorf("no handler for connection type %s", mon.ConnectionType)
+		return nil, fmt.Errorf("no handler registered for connection type %s", mon.ConnectionType)
 	}
 
-	for _, existingMon := range m.monitors {
-		if existingMon.Connection == mon.Connection {
-			return nil, fmt.Errorf("there is already a monitor for %s", mon.Connection)
+	for _, existing := range m.monitors {
+		if existing.Connection == mon.Connection {
+			return nil, fmt.Errorf("a monitor already exists for connection %s", mon.Connection)
 		}
 	}
 
-	m.db.Create(&mon)
+	if err := m.db.Create(mon).Error; err != nil {
+		return nil, fmt.Errorf("failed to save new monitor: %w", err)
+	}
 
 	m.monitors[int(mon.ID)] = mon
 	m.startMonitor(int(mon.ID))
 
-	log.Info("A new monitor was added!")
+	log.Info("new monitor added: %s (ID: %d)", mon.Name, mon.ID)
 	return mon, nil
 }
 
-func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
+func (m *Manager) UpdateMonitor(updated *database.Monitor) error {
 	m.mu.Lock()
-	existing, exists := m.monitors[int(mon.ID)]
+	existing, exists := m.monitors[int(updated.ID)]
 	if !exists {
 		m.mu.Unlock()
-		return fmt.Errorf("monitor %d does not exist", mon.ID)
+		return fmt.Errorf("monitor %d does not exist", updated.ID)
 	}
 
-	if runner, exists := m.runners[int(mon.ID)]; exists {
+	if runner, ok := m.runners[int(updated.ID)]; ok {
 		runner.cancel()
 		<-runner.done
-		delete(m.runners, int(mon.ID))
+		delete(m.runners, int(updated.ID))
 	}
 
-	existing.Enabled = mon.Enabled
-	existing.Name = mon.Name
-	existing.Connection = mon.Connection
-	existing.Interval = mon.Interval
-	existing.AlwaysSave = mon.AlwaysSave
-	existing.ConnectionType = mon.ConnectionType
-	existing.Timeout = mon.Timeout
-	existing.Body = mon.Body
-	existing.HTTPMethod = mon.HTTPMethod
-	existing.HttpMonitorHeaders = mon.HttpMonitorHeaders
+	existing.Enabled = updated.Enabled
+	existing.Name = updated.Name
+	existing.Connection = updated.Connection
+	existing.Interval = updated.Interval
+	existing.AlwaysSave = updated.AlwaysSave
+	existing.ConnectionType = updated.ConnectionType
+	existing.Timeout = updated.Timeout
+	existing.Body = updated.Body
+	existing.HTTPMethod = updated.HTTPMethod
+	existing.HttpMonitorHeaders = updated.HttpMonitorHeaders
 
 	m.mu.Unlock()
 
@@ -135,51 +138,50 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 			return err
 		}
 
-		if mon.Notification.Type != "" || mon.Notification.Webhook != "" {
+		if updated.Notification.Type != "" || updated.Notification.Webhook != "" {
 			notification := database.Notification{
 				MonitorID: existing.ID,
-				Enabled:   mon.Notification.Enabled,
-				Type:      mon.Notification.Type,
-				Webhook:   mon.Notification.Webhook,
+				Enabled:   updated.Notification.Enabled,
+				Type:      updated.Notification.Type,
+				Webhook:   updated.Notification.Webhook,
 			}
 
-			result := tx.Clauses(clause.OnConflict{
+			return tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "monitor_id"}},
 				DoUpdates: clause.AssignmentColumns([]string{"enabled", "type", "webhook"}),
-			}).Create(&notification)
-
-			if result.Error != nil {
-				return result.Error
-			}
+			}).Create(&notification).Error
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update monitor %d: %w", updated.ID, err)
 	}
 
 	m.startMonitor(int(existing.ID))
 
-	log.Info("Monitor '%s' with id %d was updated", existing.Name, existing.ID)
+	log.Info("monitor updated: %s (ID: %d)", existing.Name, existing.ID)
+
 	if err := m.db.Preload(clause.Associations).Find(existing).Error; err != nil {
-		log.Error("failed to reload updated monitor %d after save: %v", existing.ID, err)
+		log.Error("failed to reload associations for monitor %d: %v", existing.ID, err)
 	}
+
 	return nil
 }
 
 func (m *Manager) GetMonitor(id int) *database.Monitor {
 	var mon database.Monitor
-	result := m.db.Preload(clause.Associations).Where("id = ?", id).Find(&mon)
-
-	if result.RowsAffected == 0 {
+	if err := m.db.Preload(clause.Associations).Where("id = ?", id).Find(&mon).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil
+		}
+		log.Error("failed to load monitor %d: %v", id, err)
 		return nil
 	}
 	return &mon
 }
 
-// Can be used to run a monitor separately from the scheduled one
 func (m *Manager) RunMonitor(id int) (*database.Monitor, error) {
 	m.mu.Lock()
 	mon, exists := m.monitors[id]
@@ -187,27 +189,29 @@ func (m *Manager) RunMonitor(id int) (*database.Monitor, error) {
 		m.mu.Unlock()
 		return nil, fmt.Errorf("monitor %d not found", id)
 	}
-
 	if !mon.Enabled {
 		m.mu.Unlock()
 		return nil, fmt.Errorf("monitor %d is disabled", id)
 	}
-
-	ctx := context.Background()
 	m.mu.Unlock()
 
-	m.runCheck(ctx, id)
+	m.runCheck(context.Background(), id)
 
 	updated := m.GetMonitor(id)
 	if updated == nil {
-		return nil, fmt.Errorf("failed to reload monitor %d", id)
+		return nil, fmt.Errorf("failed to reload monitor %d after manual run", id)
 	}
 
 	return updated, nil
 }
 
 func (m *Manager) ListMonitors() map[int]*database.Monitor {
-	return m.monitors
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	copy := make(map[int]*database.Monitor, len(m.monitors))
+	maps.Copy(copy, m.monitors)
+	return copy
 }
 
 func (m *Manager) RemoveMonitor(id int) error {
@@ -216,10 +220,10 @@ func (m *Manager) RemoveMonitor(id int) error {
 
 	mon, exists := m.monitors[id]
 	if !exists {
-		return fmt.Errorf("monitor with id %d does not exist", id)
+		return fmt.Errorf("monitor %d does not exist", id)
 	}
 
-	if runner, exists := m.runners[id]; exists {
+	if runner, ok := m.runners[id]; ok {
 		runner.cancel()
 		<-runner.done
 		delete(m.runners, id)
@@ -228,10 +232,10 @@ func (m *Manager) RemoveMonitor(id int) error {
 	delete(m.monitors, id)
 
 	if err := m.db.Delete(mon).Error; err != nil {
-		return fmt.Errorf("failed to delete monitor from database: %v", err)
+		return fmt.Errorf("failed to delete monitor %d from database: %w", id, err)
 	}
 
-	log.Info("Monitor %q removed", mon.Name)
+	log.Info("monitor removed: %s (ID: %d)", mon.Name, id)
 	return nil
 }
 
@@ -239,13 +243,11 @@ func (m *Manager) startMonitor(monID int) {
 	ctx, cancel := context.WithCancel(m.ctx)
 	done := make(chan struct{})
 
-	m.runners[monID] = &monitorRunner{
-		cancel: cancel,
-		done:   done,
-	}
+	m.mu.Lock()
+	m.runners[monID] = &monitorRunner{cancel: cancel, done: done}
+	m.mu.Unlock()
 
 	m.wg.Add(1)
-
 	go func() {
 		defer m.wg.Done()
 		defer close(done)
@@ -285,34 +287,50 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	if !mon.Enabled {
 		mon.Healthy = nil
 		if err := m.db.Save(mon).Error; err != nil {
-			log.Error("failed to update disabled monitor: %v", err)
+			log.Error("failed to update disabled monitor %d: %v", mon.ID, err)
 		}
 		m.mu.Unlock()
 		return
 	}
 
-	handler := m.handlers[database.ConnectionType(mon.ConnectionType)]
+	wasUnhealthy := mon.Healthy != nil && !*mon.Healthy
+	handler, handlerExists := m.handlers[database.ConnectionType(mon.ConnectionType)]
 	m.mu.Unlock()
 
-	if handler == nil {
+	if !handlerExists {
+		log.Error("no handler for connection type %s (monitor %d)", mon.ConnectionType, mon.ID)
 		return
 	}
 
-	var (
-		start                       = time.Now()
-		response, responseTime, err = handler.Check(ctx, mon)
-		result                      = response
-	)
+	start := time.Now()
+	response, responseTime, err := handler.Check(ctx, mon)
+	result := response
+	healthy := err == nil
 
-	if err != nil {
-		if result == "" {
-			result = err.Error()
-		}
-	} else if !mon.AlwaysSave {
+	if err != nil && result == "" {
+		result = err.Error()
+	} else if healthy && !mon.AlwaysSave {
 		result = ""
 	}
 
-	healthy := err == nil
+	if err != nil && mon.Notification.Enabled {
+		notifier := notification.NewWebhookNotifier(mon.Notification.Webhook)
+		notifier.Send(notification.Message{
+			Title: fmt.Sprintf("Issues with %s", mon.Name),
+			Text:  fmt.Sprintf("The goose has encountered an issue while contacting %s\n\n```\n%s\n```", mon.Connection, result),
+			Level: notification.Error,
+		})
+	}
+
+	if wasUnhealthy && healthy && mon.Notification.Enabled {
+		notifier := notification.NewWebhookNotifier(mon.Notification.Webhook)
+		notifier.Send(notification.Message{
+			Title: fmt.Sprintf("%s is back up", mon.Name),
+			Text:  fmt.Sprintf("Good news! The monitor **%s** has recovered and is now responding normally.\n\nConnection: %s", mon.Name, mon.Connection),
+			Level: notification.Success,
+		})
+	}
+
 	mon.Checked = start
 	mon.Healthy = &healthy
 	mon.TotalChecks++
@@ -328,12 +346,12 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		ResponseTimeMs: responseTime,
 	}
 
-	if dbErr := m.db.Create(check).Error; dbErr != nil {
-		log.Error("failed to save monitor check: %v", dbErr)
+	if err := m.db.Create(check).Error; err != nil {
+		log.Error("failed to save check for monitor %d: %v", mon.ID, err)
 	}
 
-	if dbErr := m.db.Save(mon).Error; dbErr != nil {
-		log.Error("failed to update monitor: %v", dbErr)
+	if err := m.db.Save(mon).Error; err != nil {
+		log.Error("failed to update monitor %d after check: %v", mon.ID, err)
 	}
 }
 

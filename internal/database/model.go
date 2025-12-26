@@ -41,7 +41,7 @@ type MonitorCheck struct {
 	MonitorID      uint      `gorm:"index;not null" json:"-"`
 	Created        time.Time `json:"created"`
 	Success        bool      `json:"success"`
-	Result         string    `json:"result,omitempty"`
+	Result         string    `json:"result"`
 	ResponseTimeMs int64     `json:"responseTimeMs"`
 
 	Monitor Monitor `gorm:"foreignKey:MonitorID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
