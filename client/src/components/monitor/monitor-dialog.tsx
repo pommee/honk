@@ -1,10 +1,3 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,10 +9,9 @@ import { ContainerConfig } from "./monitors/ContainerMonitor";
 import { HttpConfig } from "./monitors/HttpMonitor";
 import { PingConfig } from "./monitors/PingMonitor";
 import { TcpConfig } from "./monitors/TcpMonitor";
+import { XIcon } from "@phosphor-icons/react";
 
-interface MonitorFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface MonitorFormPanelProps {
   form: MonitorForm;
   onFormChange: (
     updater: ((prev: MonitorForm) => MonitorForm) | MonitorForm
@@ -27,19 +19,17 @@ interface MonitorFormDialogProps {
   isSubmitting: boolean;
   onSave: () => void;
   onCancel: () => void;
-  mode?: "create" | "edit";
+  mode: "create" | "edit";
 }
 
-export function MonitorFormDialog({
-  open,
-  onOpenChange,
+export function MonitorFormPanel({
   form,
   onFormChange,
   isSubmitting,
   onSave,
   onCancel,
-  mode = "edit"
-}: MonitorFormDialogProps) {
+  mode
+}: MonitorFormPanelProps) {
   const isCreateMode = mode === "create";
 
   const getPlaceholder = () => {
@@ -124,22 +114,38 @@ export function MonitorFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg md:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+    <div className="py-4 px-10 mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">
             {isCreateMode ? "Add Monitor" : "Edit Monitor"}
-          </DialogTitle>
-          <DialogDescription>
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
             {isCreateMode
               ? "Configure a new monitor to track service uptime."
               : "Update the monitor configuration. Changes apply immediately."}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          <XIcon className="h-5 w-5" />
+        </Button>
+      </div>
 
-        <div className="space-y-6">
+      {/* Main form content with left and right sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+        {/* Left side settings */}
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="monitor-name">Name (optional)</Label>
+            <p className="text-muted-foreground text-sm mt-1">
+              Monitor name, might make it easier to differentiate between
+              monitors
+            </p>
             <Input
               id="monitor-name"
               placeholder="My Website"
@@ -152,19 +158,28 @@ export function MonitorFormDialog({
 
           <div className="space-y-2">
             <Label htmlFor="monitor-url">Target</Label>
+            <p className="text-muted-foreground text-sm mt-1">
+              Source used when checking the health
+            </p>
             <Input
               id="monitor-url"
               placeholder={getPlaceholder()}
               required
               value={form.connection ?? ""}
               onChange={(e) =>
-                handleFormChange((f) => ({ ...f, connection: e.target.value }))
+                handleFormChange((f) => ({
+                  ...f,
+                  connection: e.target.value
+                }))
               }
             />
           </div>
 
           <div className="space-y-2">
             <Label>Monitor Type</Label>
+            <p className="text-muted-foreground text-sm mt-1">
+              Type of monitor to check health
+            </p>
             <Tabs
               value={form.connectionType}
               onValueChange={(v) =>
@@ -183,10 +198,11 @@ export function MonitorFormDialog({
             </Tabs>
           </div>
 
-          {renderTypeSpecificConfig()}
-
-          <div className="space-y-3">
+          <div className="space-y-2">
             <Label>Check Interval</Label>
+            <p className="text-muted-foreground text-sm mt-1">
+              How often to check health
+            </p>
             <ToggleGroup
               variant="outline"
               type="single"
@@ -204,43 +220,48 @@ export function MonitorFormDialog({
             </ToggleGroup>
           </div>
 
-          <div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="monitor-enabled"
-                checked={form.enabled ?? true}
-                onCheckedChange={(checked) =>
-                  handleFormChange((f) => ({ ...f, enabled: checked }))
-                }
-              />
-              <Label htmlFor="monitor-enabled" className="text-sm font-medium">
-                Enable monitor
-              </Label>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="monitor-enabled"
+                  checked={form.enabled ?? true}
+                  onCheckedChange={(checked) =>
+                    handleFormChange((f) => ({ ...f, enabled: checked }))
+                  }
+                />
+                <Label
+                  htmlFor="monitor-enabled"
+                  className="text-sm font-medium"
+                >
+                  Enable monitor
+                </Label>
+              </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                Will check uptime while enabled
+              </p>
             </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              Will check uptime while enabled
-            </p>
-          </div>
 
-          <div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="monitor-alwaysSave"
-                checked={form.alwaysSave ?? false}
-                onCheckedChange={(checked) =>
-                  handleFormChange((f) => ({ ...f, alwaysSave: checked }))
-                }
-              />
-              <Label
-                htmlFor="monitor-alwaysSave"
-                className="text-sm font-medium"
-              >
-                Always save response
-              </Label>
+            <div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="monitor-alwaysSave"
+                  checked={form.alwaysSave ?? false}
+                  onCheckedChange={(checked) =>
+                    handleFormChange((f) => ({ ...f, alwaysSave: checked }))
+                  }
+                />
+                <Label
+                  htmlFor="monitor-alwaysSave"
+                  className="text-sm font-medium"
+                >
+                  Always save response
+                </Label>
+              </div>
+              <p className="text-muted-foreground text-sm mt-1">
+                Saves the response even when successful
+              </p>
             </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              Saves the response even when successful
-            </p>
           </div>
 
           <div className="space-y-4">
@@ -276,7 +297,7 @@ export function MonitorFormDialog({
             </div>
 
             {notification.enabled && (
-              <>
+              <div className="space-y-4 pl-2 border-l-2 border-muted">
                 <div className="space-y-2">
                   <Label>Notification method</Label>
                   <ToggleGroup
@@ -344,12 +365,17 @@ export function MonitorFormDialog({
                     </p>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4">
+        {/* Right side settings, type specific */}
+        <div>{renderTypeSpecificConfig()}</div>
+      </div>
+
+      <div className="mt-8 pt-6 border-t">
+        <div className="flex justify-end gap-3">
           <Button
             type="button"
             variant="outline"
@@ -368,7 +394,7 @@ export function MonitorFormDialog({
                 : "Save Changes"}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

@@ -104,14 +104,15 @@ func (api *API) updateMonitor(c *gin.Context) {
 	}
 
 	err := api.Manager.UpdateMonitor(&database.Monitor{
-		ID:             uint(req.ID),
-		Enabled:        *req.Enabled,
-		Name:           req.Name,
-		ConnectionType: req.ConnectionType,
-		Connection:     req.Connection,
-		Interval:       req.Interval,
-		AlwaysSave:     *req.AlwaysSave,
-		Notification:   req.Notification,
+		ID:                 uint(req.ID),
+		Enabled:            *req.Enabled,
+		Name:               req.Name,
+		ConnectionType:     req.ConnectionType,
+		Connection:         req.Connection,
+		Interval:           req.Interval,
+		AlwaysSave:         *req.AlwaysSave,
+		Notification:       req.Notification,
+		HttpMonitorHeaders: req.HttpMonitorHeaders,
 	})
 	if err != nil {
 		logger.Warning("Failed to update monitor: %v", err)

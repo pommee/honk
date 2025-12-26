@@ -164,6 +164,9 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 	m.startMonitor(int(existing.ID))
 
 	logger.Info("Monitor '%s' with id %d was updated", existing.Name, existing.ID)
+	if err := m.db.Preload(clause.Associations).Find(existing).Error; err != nil {
+		logger.Error("failed to reload updated monitor %d after save: %v", existing.ID, err)
+	}
 	return nil
 }
 

@@ -1,5 +1,7 @@
-### <img src="./resources/mascot.png" width=5%> honk
+## <img src="./resources/mascot.png" width=100> Honk
 
-Uptime tracker written in Golang with a minimal React/TailwindCSS frontend.
+_Need a goose to honk at you when a service is experiencing issues?_
+
+An uptime tracker written in Golang with a minimal React/TailwindCSS frontend.
 
 ![preview](./resources/preview.png)

@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { MonitorForm } from "@/types";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type HttpConfigProps = {
   form: MonitorForm;
@@ -30,6 +31,9 @@ export function HttpConfig({
     <div className="space-y-6">
       <div className="space-y-2">
         <Label>Method</Label>
+        <p className="text-muted-foreground text-sm mt-1">
+          Communication protocol used
+        </p>
         <ToggleGroup
           type="single"
           variant="outline"
@@ -42,47 +46,54 @@ export function HttpConfig({
             }))
           }
         >
-          <ToggleGroupItem value="GET" className="!text-green-400">
+          <ToggleGroupItem value="GET" className="text-green-400!">
             GET
           </ToggleGroupItem>
-          <ToggleGroupItem value="POST" className="!text-yellow-400">
+          <ToggleGroupItem value="POST" className="text-yellow-400!">
             POST
           </ToggleGroupItem>
-          <ToggleGroupItem value="PUT" className="!text-blue-400">
+          <ToggleGroupItem value="PUT" className="text-blue-400!">
             PUT
           </ToggleGroupItem>
-          <ToggleGroupItem value="PATCH" className="!text-purple-400">
+          <ToggleGroupItem value="PATCH" className="text-purple-400!">
             PATCH
           </ToggleGroupItem>
-          <ToggleGroupItem value="DELETE" className="!text-red-400">
+          <ToggleGroupItem value="DELETE" className="text-red-400!">
             DELETE
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label>HTTP Headers</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onAddHeader}
-            className="h-8"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            Add Header
-          </Button>
+        <div>
+          <div className="flex items-center justify-between">
+            <Label>HTTP Headers</Label>
+            <Button
+              type="button"
+              variant="default"
+              onClick={onAddHeader}
+              className="h-8"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              Add Header
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Header(s) included in every request to the target
+          </p>
         </div>
 
         {headers.length === 0 ? (
-          <div className="text-sm text-muted-foreground italic p-4 border rounded-md bg-muted/50 text-center">
+          <div className="text-sm text-muted-foreground italic p-4 border rounded-md text-center">
             No headers added. Click "Add Header" to include custom headers.
           </div>
         ) : (
-          <div className="space-y-3">
+          <ScrollArea className="h-48">
             {headers.map((header, index) => (
-              <div key={index} className="flex gap-3 items-center">
+              <div
+                key={index}
+                className="flex gap-3 items-center space-y-2 animate-in"
+              >
                 <Input
                   placeholder="Header name (e.g., Authorization)"
                   value={header.key ?? ""}
@@ -102,16 +113,13 @@ export function HttpConfig({
                   variant="ghost"
                   size="icon"
                   onClick={() => onRemoveHeader(index)}
-                  className="h-9 w-9 shrink-0"
+                  className="mr-2 text-muted-foreground hover:text-red-500"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <TrashIcon size={16} />
                 </Button>
               </div>
             ))}
-            <p className="text-xs text-muted-foreground">
-              These headers will be included in every request to the target.
-            </p>
-          </div>
+          </ScrollArea>
         )}
       </div>
     </div>

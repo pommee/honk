@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { SiteHeader } from "@/components/site-header";
-import { GetRequest, PostRequest } from "@/util";
+import { GetRequest, PostRequest, PutRequest } from "@/util";
 import { toast } from "sonner";
 
 import { mapApiMonitor } from "@/lib/monitors";
@@ -10,15 +10,17 @@ import { useMonitorPolling } from "@/hooks/useMonitorPolling";
 import { MonitorSidebar } from "@/components/monitor/monitor-sidebar";
 import { DefaultMonitorForm, Monitor, MonitorForm } from "@/types";
 import { MonitorDetail } from "@/components/monitor/monitor-detail";
-import { MonitorFormDialog } from "@/components/monitor/monitor-dialog";
+import { MonitorFormPanel } from "@/components/monitor/monitor-dialog";
 
 const SELECTED_MONITOR_KEY = "selectedMonitorId";
+
+type ViewMode = "detail" | "create" | "edit";
 
 export default function Home() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [selected, setSelected] = useState<Monitor | null>(null);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("detail");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<MonitorForm>(DefaultMonitorForm);
 
   const refreshMonitor = useCallback(async (id: number) => {
@@ -82,11 +84,27 @@ export default function Home() {
 
   const handleCreateNewMonitor = () => {
     setForm(DefaultMonitorForm);
-    setIsAddOpen(true);
+    setViewMode("create");
+  };
+
+  const handleEditMonitor = (monitor: Monitor) => {
+    setForm({
+      id: monitor.id,
+      enabled: monitor.enabled,
+      name: monitor.name,
+      connection: monitor.connection,
+      connectionType: monitor.connectionType,
+      httpMethod: monitor.httpMethod,
+      interval: monitor.interval,
+      alwaysSave: monitor.alwaysSave,
+      headers: monitor.headers ?? [],
+      notification: monitor.notification
+    });
+    setViewMode("edit");
   };
 
   const handleCreate = async () => {
-    setIsCreating(true);
+    setIsSubmitting(true);
     try {
       const [code, response] = await PostRequest("monitor", form);
       if (code !== 200) {
@@ -112,20 +130,45 @@ export default function Home() {
       localStorage.setItem(SELECTED_MONITOR_KEY, newMonitor.id.toString());
       await refreshMonitor(newMonitor.id);
 
-      setIsAddOpen(false);
+      setViewMode("detail");
     } catch (err) {
       toast.error(err.message || "Failed to create monitor");
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const handleUpdate = async () => {
+    if (!selected) return;
+    setIsSubmitting(true);
+    try {
+      const [code, response] = await PutRequest(`monitor/${selected.id}`, {
+        ...form
+      });
+      if (code !== 200) {
+        const text = await response.error;
+        throw new Error(text || "Failed to update monitor");
+      }
+      toast.success("Monitor updated successfully");
+      await refreshMonitor(selected.id);
+      setViewMode("detail");
+    } catch (err) {
+      toast.error(err.message || "Failed to update monitor");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setViewMode("detail");
   };
 
   const handleMonitorDeleted = (id: number) => {
     setMonitors((prev) => prev.filter((m) => m.id !== id));
     if (selected?.id === id) {
       setSelected(null);
-      // Remove from localStorage when the selected monitor is deleted
       localStorage.removeItem(SELECTED_MONITOR_KEY);
+      setViewMode("detail");
     }
   };
 
@@ -138,6 +181,7 @@ export default function Home() {
       setSelected(monitor);
       localStorage.setItem(SELECTED_MONITOR_KEY, monitor.id.toString());
       await refreshMonitor(monitor.id);
+      setViewMode("detail");
     },
     [refreshMonitor]
   );
@@ -155,27 +199,28 @@ export default function Home() {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <MonitorDetail
-            monitor={selected}
-            hasMonitors={monitors.length > 0}
-            onRunNow={runMonitorNow}
-            onDeleted={handleMonitorDeleted}
-            onUpdated={handleMonitorUpdated}
-            onCreateNew={handleCreateNewMonitor}
-          />
+          {viewMode === "create" || viewMode === "edit" ? (
+            <MonitorFormPanel
+              form={form}
+              onFormChange={setForm}
+              isSubmitting={isSubmitting}
+              onSave={viewMode === "create" ? handleCreate : handleUpdate}
+              onCancel={handleCancel}
+              mode={viewMode}
+            />
+          ) : (
+            <MonitorDetail
+              monitor={selected}
+              hasMonitors={monitors.length > 0}
+              onRunNow={runMonitorNow}
+              onDeleted={handleMonitorDeleted}
+              onUpdated={handleMonitorUpdated}
+              onEdit={selected ? () => handleEditMonitor(selected) : undefined}
+              onCreateNew={handleCreateNewMonitor}
+            />
+          )}
         </main>
       </div>
-
-      <MonitorFormDialog
-        open={isAddOpen}
-        onOpenChange={setIsAddOpen}
-        form={form}
-        onFormChange={setForm}
-        isSubmitting={isCreating}
-        onSave={handleCreate}
-        onCancel={() => setIsAddOpen(false)}
-        mode="create"
-      />
     </div>
   );
 }

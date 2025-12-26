@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { Monitor, MonitorForm } from "@/types";
+import { useState } from "react";
+import { Monitor } from "@/types";
 import { toast } from "sonner";
-import { DeleteRequest, PutRequest } from "@/util";
+import { DeleteRequest } from "@/util";
 import { MonitorHeader } from "./monitor-header";
 import { MonitorStats } from "./monitor-stats";
 import { MonitorTarget } from "./monitor-target";
@@ -9,7 +9,6 @@ import { MonitorChecksChart } from "./monitor-checks-chart";
 import { DeleteMonitorDialog } from "./delete-monitor-dialog";
 import { Button } from "../ui/button";
 import { ActivityIcon, PlusCircleIcon } from "@phosphor-icons/react";
-import { MonitorFormDialog } from "./monitor-dialog";
 
 interface Props {
   monitor: Monitor | null;
@@ -17,6 +16,7 @@ interface Props {
   onRunNow?: (id: number) => void;
   onDeleted?: (id: number) => void;
   onUpdated?: (id: number) => void;
+  onEdit?: () => void;
   onCreateNew?: () => void;
 }
 
@@ -25,42 +25,11 @@ export function MonitorDetail({
   hasMonitors,
   onRunNow,
   onDeleted,
-  onUpdated,
+  onEdit,
   onCreateNew
 }: Props) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [form, setForm] = useState<MonitorForm>({
-    id: monitor?.id,
-    enabled: monitor?.enabled ?? false,
-    name: monitor?.name ?? "",
-    connection: monitor?.connection ?? "",
-    connectionType: monitor?.connectionType ?? "http",
-    httpMethod: monitor?.httpMethod ?? "GET",
-    interval: monitor?.interval ?? 60,
-    alwaysSave: monitor?.alwaysSave ?? false,
-    headers: monitor?.headers ?? [],
-    notification: monitor?.notification ?? null
-  });
-
-  useEffect(() => {
-    if (!monitor || isEditModalOpen) return;
-
-    setForm({
-      id: monitor.id,
-      enabled: monitor.enabled,
-      name: monitor.name,
-      connection: monitor.connection,
-      connectionType: monitor.connectionType,
-      httpMethod: monitor.httpMethod,
-      interval: monitor.interval,
-      alwaysSave: monitor.alwaysSave,
-      headers: monitor.headers ?? [],
-      notification: monitor.notification
-    });
-  }, [monitor, isEditModalOpen]);
 
   const handleDelete = async () => {
     if (!monitor) return;
@@ -84,27 +53,6 @@ export function MonitorDetail({
     }
   };
 
-  const handleUpdate = async () => {
-    if (!monitor) return;
-    setIsUpdating(true);
-    try {
-      const [code, response] = await PutRequest(`monitor/${monitor.id}`, {
-        ...form
-      });
-      if (code !== 200) {
-        const text = await response.error;
-        throw new Error(text || "Failed to update monitor");
-      }
-      toast.success("Monitor updated successfully");
-      setIsEditModalOpen(false);
-      onUpdated?.(monitor.id);
-    } catch (err) {
-      toast.error(err.message || "Failed to update monitor");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const copyTarget = () => {
     if (monitor?.connection) {
       navigator.clipboard.writeText(monitor.connection);
@@ -122,7 +70,7 @@ export function MonitorDetail({
         <MonitorHeader
           monitor={monitor}
           onRun={() => onRunNow?.(monitor.id)}
-          onEdit={() => setIsEditModalOpen(true)}
+          onEdit={onEdit}
           onDelete={() => setIsDeleteModalOpen(true)}
         />
 
@@ -136,17 +84,6 @@ export function MonitorDetail({
           monitor={monitor}
           isDeleting={isDeleting}
           onDelete={handleDelete}
-        />
-
-        <MonitorFormDialog
-          open={isEditModalOpen}
-          onOpenChange={setIsEditModalOpen}
-          form={form}
-          onFormChange={setForm}
-          isSubmitting={isUpdating}
-          onSave={handleUpdate}
-          onCancel={() => setIsEditModalOpen(false)}
-          mode="edit"
         />
       </div>
     </main>
