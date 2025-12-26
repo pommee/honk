@@ -19,7 +19,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var logger = internal.GetLogger()
+var log = internal.GetLogger()
 
 const (
 	maxRetries = 10
@@ -72,7 +72,7 @@ func (api *API) configureCORS() {
 	if api.Dashboard {
 		corsConfig.AllowOrigins = append(corsConfig.AllowOrigins, "*")
 	} else {
-		logger.Warning("Dashboard UI is disabled")
+		log.Warning("Dashboard UI is disabled")
 		corsConfig.AllowOrigins = append(corsConfig.AllowOrigins, "http://localhost:8081")
 		api.routes.Use(cors.New(corsConfig))
 	}
@@ -90,7 +90,7 @@ func (api *API) setupAuthAndMiddleware() {
 		//api.setupAuth()
 		//api.routes.Use(api.authMiddleware())
 	} else {
-		logger.Warning("Dashboard authentication is disabled.")
+		log.Warning("Dashboard authentication is disabled.")
 	}
 }
 
@@ -107,7 +107,7 @@ func (api *API) startServer(errorChannel chan struct{}) {
 			break
 		}
 
-		logger.Error("Failed to bind to port (attempt %d/%d): %v", attempt, maxRetries, err)
+		log.Error("Failed to bind to port (attempt %d/%d): %v", attempt, maxRetries, err)
 
 		if attempt < maxRetries {
 			time.Sleep(1 * time.Second)
@@ -115,19 +115,19 @@ func (api *API) startServer(errorChannel chan struct{}) {
 	}
 
 	if err != nil {
-		logger.Error("Failed to start server after %d attempts", maxRetries)
+		log.Error("Failed to start server after %d attempts", maxRetries)
 		errorChannel <- struct{}{}
 		return
 	}
 
 	if serverIP, err := GetServerIP(); err == nil {
-		logger.Info("Web interface available at http://%s:%d", serverIP, api.Port)
+		log.Info("Web interface available at http://%s:%d", serverIP, api.Port)
 	} else {
-		logger.Info("Web server started on port :%d", api.Port)
+		log.Info("Web server started on port :%d", api.Port)
 	}
 
 	if err := api.router.RunListener(listener); err != nil {
-		logger.Error("Server error: %v", err)
+		log.Error("Server error: %v", err)
 		errorChannel <- struct{}{}
 	}
 }
@@ -135,12 +135,12 @@ func (api *API) startServer(errorChannel chan struct{}) {
 func (api *API) serveEmbeddedContent(content embed.FS) {
 	ipAddress, err := GetServerIP()
 	if err != nil {
-		logger.Error("Error getting IP address: %v", err)
+		log.Error("Error getting IP address: %v", err)
 		return
 	}
 
 	if err := api.serveStaticFiles(content); err != nil {
-		logger.Error("Error serving embedded content: %v", err)
+		log.Error("Error serving embedded content: %v", err)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (api *API) getMimeType(path string) string {
 func (api *API) serveIndexHTML(content embed.FS, ipAddress string) {
 	indexContent, err := content.ReadFile("client/dist/index.html")
 	if err != nil {
-		logger.Error("Error reading index.html: %v", err)
+		log.Error("Error reading index.html: %v", err)
 		return
 	}
 

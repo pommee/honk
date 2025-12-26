@@ -1,4 +1,5 @@
 import { ModeToggle } from "./theme/theme-toggle";
+import { NavActions } from "./ui/nav-actions";
 
 export function SiteHeader() {
   return (
@@ -12,6 +13,7 @@ export function SiteHeader() {
 
       <div className="flex items-center gap-2 px-4 lg:px-6">
         <ModeToggle />
+        <NavActions />
       </div>
     </header>
   );

@@ -25,7 +25,7 @@ func (api *API) registerMonitorRoutes() {
 func (api *API) createMonitor(c *gin.Context) {
 	var req NewMonitor
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warning("Invalid monitor payload: %v", err)
+		log.Warning("Invalid monitor payload: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid request body",
 		})
@@ -46,7 +46,7 @@ func (api *API) createMonitor(c *gin.Context) {
 
 	newMonitor, err := api.Manager.AddMonitor(monitor)
 	if err != nil {
-		logger.Warning("Failed to add monitor: %v", err)
+		log.Warning("Failed to add monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -65,7 +65,7 @@ func (api *API) runMonitor(c *gin.Context) {
 
 	newMonitor, err := api.Manager.RunMonitor(id)
 	if err != nil {
-		logger.Warning("Failed to add monitor: %v", err)
+		log.Warning("Failed to add monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -96,7 +96,7 @@ func (api *API) getMonitor(c *gin.Context) {
 func (api *API) updateMonitor(c *gin.Context) {
 	var req UpdateMonitor
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warning("Invalid monitor payload: %v", err)
+		log.Warning("Invalid monitor payload: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid request body",
 		})
@@ -115,7 +115,7 @@ func (api *API) updateMonitor(c *gin.Context) {
 		HttpMonitorHeaders: req.HttpMonitorHeaders,
 	})
 	if err != nil {
-		logger.Warning("Failed to update monitor: %v", err)
+		log.Warning("Failed to update monitor: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("%v", err),
 		})

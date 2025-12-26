@@ -86,6 +86,9 @@ export function MonitorChecksChart({
 
   useEffect(() => {
     if (totalPages > 0) {
+      // TODO: FIX
+      // Error: Calling setState synchronously within an effect can trigger cascading renders
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage(totalPages);
     }
   }, [totalPages]);

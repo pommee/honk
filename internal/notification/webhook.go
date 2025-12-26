@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"honk/internal"
 	"io"
 	"net/http"
 	"time"
 )
+
+var log = internal.GetLogger()
 
 type WebhookNotifier struct {
 	URL      string
@@ -47,7 +50,11 @@ func (w *WebhookNotifier) Send(msg Message) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			log.Warning("failed to close response body: %v", closeErr)
+		}
+	}()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {

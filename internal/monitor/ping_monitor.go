@@ -50,7 +50,7 @@ func (h *ICMPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 	}
 	duration := time.Since(start).Milliseconds()
 
-	logger.Debug("ICMP handler '%s' pinging %s", m.Name, host)
+	log.Debug("ICMP handler '%s' pinging %s", m.Name, host)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

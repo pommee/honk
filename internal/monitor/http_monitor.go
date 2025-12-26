@@ -25,7 +25,7 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 		return fmt.Sprintf("Failed to create request to %s: %v", m.Connection, err), 0, err
 	}
 
-	logger.Debug("HTTP handler '%s' sending request to %s", m.Name, m.Connection)
+	log.Debug("HTTP handler '%s' sending request to %s", m.Name, m.Connection)
 
 	for _, header := range m.HttpMonitorHeaders {
 		req.Header.Add(header.Key, header.Value)
@@ -40,7 +40,7 @@ func (h *HTTPPingHandler) Check(ctx context.Context, m *database.Monitor) (strin
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.Warning("failed to close response body: %v", closeErr)
+			log.Warning("failed to close response body: %v", closeErr)
 		}
 	}()
 

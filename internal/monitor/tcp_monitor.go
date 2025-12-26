@@ -37,7 +37,11 @@ func (h *TCPHandler) Check(ctx context.Context, m *database.Monitor) (string, in
 		return fmt.Sprintf("TCP connection failed: %v", err), duration, err
 	}
 
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			log.Warning("failed to close tcp connection: %v", closeErr)
+		}
+	}()
 
 	return fmt.Sprintf("Successfully connected to %s", m.Connection), duration, nil
 }

@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 	"fmt"
-	"honk/internal"
 	"honk/internal/database"
 	"sync"
 	"time"
@@ -11,8 +10,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
-
-var logger = internal.GetLogger()
 
 type Handler interface {
 	Check(ctx context.Context, m *database.Monitor) (string, int64, error)
@@ -55,7 +52,7 @@ func NewManager(db *gorm.DB) *Manager {
 func (m *Manager) loadMonitorsFromDB() {
 	var dbMonitors []database.Monitor
 	if err := m.db.Preload(clause.Associations).Find(&dbMonitors).Error; err != nil {
-		logger.Error("failed to load monitors from database: %v", err)
+		log.Error("failed to load monitors from database: %v", err)
 		return
 	}
 
@@ -70,7 +67,7 @@ func (m *Manager) loadMonitorsFromDB() {
 		m.startMonitor(int(mon.ID))
 	}
 
-	logger.Info("%d monitors loaded from database", len(dbMonitors))
+	log.Info("%d monitors loaded from database", len(dbMonitors))
 }
 
 func (m *Manager) RegisterHandler(ct database.ConnectionType, h Handler) {
@@ -102,7 +99,7 @@ func (m *Manager) AddMonitor(mon *database.Monitor) (*database.Monitor, error) {
 	m.monitors[int(mon.ID)] = mon
 	m.startMonitor(int(mon.ID))
 
-	logger.Info("A new monitor was added!")
+	log.Info("A new monitor was added!")
 	return mon, nil
 }
 
@@ -163,9 +160,9 @@ func (m *Manager) UpdateMonitor(mon *database.Monitor) error {
 
 	m.startMonitor(int(existing.ID))
 
-	logger.Info("Monitor '%s' with id %d was updated", existing.Name, existing.ID)
+	log.Info("Monitor '%s' with id %d was updated", existing.Name, existing.ID)
 	if err := m.db.Preload(clause.Associations).Find(existing).Error; err != nil {
-		logger.Error("failed to reload updated monitor %d after save: %v", existing.ID, err)
+		log.Error("failed to reload updated monitor %d after save: %v", existing.ID, err)
 	}
 	return nil
 }
@@ -232,7 +229,7 @@ func (m *Manager) RemoveMonitor(id int) error {
 		return fmt.Errorf("failed to delete monitor from database: %v", err)
 	}
 
-	logger.Info("Monitor %q removed", mon.Name)
+	log.Info("Monitor %q removed", mon.Name)
 	return nil
 }
 
@@ -286,7 +283,7 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	if !mon.Enabled {
 		mon.Healthy = nil
 		if err := m.db.Save(mon).Error; err != nil {
-			logger.Error("failed to update disabled monitor: %v", err)
+			log.Error("failed to update disabled monitor: %v", err)
 		}
 		m.mu.Unlock()
 		return
@@ -330,11 +327,11 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	}
 
 	if dbErr := m.db.Create(check).Error; dbErr != nil {
-		logger.Error("failed to save monitor check: %v", dbErr)
+		log.Error("failed to save monitor check: %v", dbErr)
 	}
 
 	if dbErr := m.db.Save(mon).Error; dbErr != nil {
-		logger.Error("failed to update monitor: %v", dbErr)
+		log.Error("failed to update monitor: %v", dbErr)
 	}
 }
 

@@ -12,3 +12,4 @@ dev-server:  ; air .
 dev-website: ; pnpm -C client install && pnpm -C client dev
 
 test: install lint commitlint
+	pnpm dlx knip --directory client
