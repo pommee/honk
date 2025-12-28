@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { DeleteRequest } from "@/util";
 import { MonitorHeader } from "./monitor-header";
 import { MonitorStats } from "./monitor-stats";
-import { MonitorTarget } from "./monitor-target";
 import { MonitorChecksChart } from "./monitor-checks-chart";
 import { DeleteMonitorDialog } from "./delete-monitor-dialog";
 import { Button } from "../ui/button";
@@ -53,20 +52,13 @@ export function MonitorDetail({
     }
   };
 
-  const copyTarget = () => {
-    if (monitor?.connection) {
-      navigator.clipboard.writeText(monitor.connection);
-      toast.success("Target URL copied to clipboard");
-    }
-  };
-
   if (!monitor) {
     return <EmptyState hasMonitors={hasMonitors} onCreateNew={onCreateNew} />;
   }
 
   return (
     <main className="flex-1 overflow-y-auto">
-      <div className="p-4 max-w-6xl mx-auto space-y-4">
+      <div className="p-4 max-w-4/5 mx-auto space-y-4">
         <MonitorHeader
           monitor={monitor}
           onRun={() => onRunNow?.(monitor.id)}
@@ -75,7 +67,6 @@ export function MonitorDetail({
         />
 
         <MonitorStats monitor={monitor} />
-        <MonitorTarget monitor={monitor} onCopy={copyTarget} />
         <MonitorChecksChart checks={monitor.checks} />
 
         <DeleteMonitorDialog

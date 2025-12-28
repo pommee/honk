@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/lib/monitor-ui";
 import { TimeAgoWithInterval } from "../ui/time-ago-with-interval";
 import { Monitor } from "@/types";
 import TimeAgo from "react-timeago";
@@ -11,6 +10,15 @@ interface MonitorHeaderProps {
   onDelete: () => void;
 }
 
+const getAverageResponseTime = (monitor: Monitor): number | null => {
+  const checks = monitor.checks;
+  if (!checks || checks.length === 0) return null;
+
+  const total = checks.reduce((sum, c) => sum + c.responseTimeMs, 0);
+
+  return total / checks.length;
+};
+
 export function MonitorHeader({
   monitor,
   onRun,
@@ -19,7 +27,7 @@ export function MonitorHeader({
 }: MonitorHeaderProps) {
   return (
     <div
-      className={`relative bg-background rounded-2xl shadow-sm border-2 p-8 ${
+      className={`relative bg-background rounded-2xl shadow-sm border-2 p-5 ${
         monitor.enabled ? "border-green-500" : "border-red-500"
       }`}
     >
@@ -30,28 +38,44 @@ export function MonitorHeader({
       >
         {monitor.enabled ? "Enabled" : "Disabled"}
       </legend>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">
             {monitor.name || monitor.connection}
           </h1>
-          <div className="mt-4 flex items-center gap-6">
-            <StatusBadge healthy={monitor.healthy} />
-            <span className="text-muted-foreground text-lg">
-              Last checked:{" "}
+
+          <div className="mt-2 flex items-center gap-1">
+            <span className="text-muted-foreground text-sm">Last checked:</span>
+            <span className="text-sm">
               {monitor.enabled ? (
                 <TimeAgoWithInterval
                   date={monitor.checked}
                   interval={monitor.interval}
                 />
               ) : (
-                <span className="text-muted-foreground">
-                  <TimeAgo date={monitor.checked} />
-                </span>
+                <TimeAgo date={monitor.checked} />
               )}
             </span>
           </div>
+          <div className="flex gap-1">
+            <p className="text-muted-foreground text-sm">Average response:</p>
+            <p className="text-sm">
+              {getAverageResponseTime(monitor)?.toFixed(2)}ms
+            </p>
+          </div>
+
+          <div className="flex gap-1">
+            <p className="text-muted-foreground text-sm">Target:</p>
+            <a
+              href={monitor.connection}
+              target="#"
+              className="flex-1 text-blue-400 underline text-sm font-mono"
+            >
+              {monitor.connection}
+            </a>
+          </div>
         </div>
+
         <div className="flex gap-3">
           <Button size="lg" variant={"default"} onClick={onRun}>
             Run now
