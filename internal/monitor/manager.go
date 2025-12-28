@@ -140,6 +140,7 @@ func (m *Manager) UpdateMonitor(updated *database.Monitor) error {
 	existing.Body = updated.Body
 	existing.HTTPMethod = updated.HTTPMethod
 	existing.HttpMonitorHeaders = updated.HttpMonitorHeaders
+	existing.Notification = updated.Notification
 
 	m.mu.Unlock()
 
@@ -154,15 +155,17 @@ func (m *Manager) UpdateMonitor(updated *database.Monitor) error {
 				Enabled:   updated.Notification.Enabled,
 				Type:      updated.Notification.Type,
 				Webhook:   updated.Notification.Webhook,
+				Email:     updated.Notification.Email,
+				Template:  updated.Notification.Template,
 			}
 
 			return tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "monitor_id"}},
-				DoUpdates: clause.AssignmentColumns([]string{"enabled", "type", "webhook"}),
+				DoUpdates: clause.AssignmentColumns([]string{"enabled", "type", "webhook", "email", "error_title", "error_body", "success_title", "success_body"}),
 			}).Create(&notification).Error
+		} else {
+			return tx.Where("monitor_id = ?", existing.ID).Delete(&database.Notification{}).Error
 		}
-
-		return nil
 	})
 
 	if err != nil {
@@ -173,7 +176,7 @@ func (m *Manager) UpdateMonitor(updated *database.Monitor) error {
 
 	log.Info("monitor updated: %s (ID: %d)", existing.Name, existing.ID)
 
-	if err := m.db.Preload(clause.Associations).Find(existing).Error; err != nil {
+	if err := m.db.Preload(clause.Associations).First(existing, existing.ID).Error; err != nil {
 		log.Error("failed to reload associations for monitor %d: %v", existing.ID, err)
 	}
 
@@ -316,10 +319,13 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 		return
 	}
 
-	start := time.Now()
-	response, responseTime, err := handler.Check(ctx, mon)
-	result := response
-	healthy := err == nil
+	var (
+		start                       = time.Now()
+		response, responseTime, err = handler.Check(ctx, mon)
+		result                      = response
+		healthy                     = err == nil
+		notificationSent            = false
+	)
 
 	if err != nil && result == "" {
 		result = err.Error()
@@ -329,11 +335,30 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 
 	if err != nil && mon.Notification.Enabled {
 		notifier := notification.NewWebhookNotifier(mon.Notification.Webhook)
-		notifier.Send(notification.Message{
-			Title: fmt.Sprintf("Issues with %s", mon.Name),
-			Text:  fmt.Sprintf("The goose has encountered an issue while contacting %s\n\n```\n%s\n```", mon.Connection, result),
-			Level: notification.Error,
-		})
+
+		msg := notification.Message{
+			Level:     notification.Error,
+			Timestamp: time.Now(),
+			Template: &notification.MessageTemplate{
+				Title: mon.Notification.Template.ErrorTitle,
+				Body:  mon.Notification.Template.ErrorBody,
+			},
+			TemplateData: &notification.TemplateData{
+				Name:       mon.Name,
+				Timestamp:  time.Now().Format(time.RFC3339),
+				Connection: mon.Connection,
+				Error:      result,
+				Level:      string(notification.Error),
+			},
+		}
+
+		if err := msg.RenderTemplate(); err != nil {
+			msg.Title = fmt.Sprintf("Issues with %s", mon.Name)
+			msg.Text = fmt.Sprintf("The goose has encountered an issue while contacting %s\n\n```\n%s\n```", mon.Connection, result)
+		}
+
+		notifier.Send(msg)
+		notificationSent = true
 	}
 
 	if wasUnhealthy && healthy && mon.Notification.Enabled {
@@ -343,6 +368,7 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 			Text:  fmt.Sprintf("Good news! The monitor **%s** has recovered and is now responding normally.\n\nConnection: %s", mon.Name, mon.Connection),
 			Level: notification.Success,
 		})
+		notificationSent = true
 	}
 
 	mon.Checked = start
@@ -353,11 +379,12 @@ func (m *Manager) runCheck(ctx context.Context, monID int) {
 	}
 
 	check := &database.MonitorCheck{
-		MonitorID:      mon.ID,
-		Created:        start,
-		Success:        healthy,
-		Result:         result,
-		ResponseTimeMs: responseTime,
+		MonitorID:        mon.ID,
+		Created:          start,
+		Success:          healthy,
+		Result:           result,
+		ResponseTimeMs:   responseTime,
+		NotificationSent: notificationSent,
 	}
 
 	if err := m.db.Create(check).Error; err != nil {

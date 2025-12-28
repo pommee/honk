@@ -8,7 +8,15 @@ import { toast } from "sonner";
 import { mapApiMonitor } from "@/lib/monitors";
 import { useMonitorPolling } from "@/hooks/useMonitorPolling";
 import { MonitorSidebar } from "@/components/monitor/monitor-sidebar";
-import { DefaultMonitorForm, Monitor, MonitorForm } from "@/types";
+import {
+  DefaultErrorBodyTemplate,
+  DefaultErrorHeaderTemplate,
+  DefaultMonitorForm,
+  DefaultSuccessTemplate,
+  DefaultWarningTemplate,
+  Monitor,
+  MonitorForm
+} from "@/types";
 import { MonitorDetail } from "@/components/monitor/monitor-detail";
 import { MonitorFormPanel } from "@/components/monitor/monitor-dialog";
 
@@ -104,8 +112,45 @@ export default function Home() {
       alwaysSave: monitor.alwaysSave,
       headers: monitor.headers ?? [],
       notification: monitor.notification
+        ? {
+            ...monitor.notification,
+            template: {
+              errorTitle:
+                monitor.notification.template?.errorTitle ||
+                DefaultErrorHeaderTemplate,
+              errorBody:
+                monitor.notification.template?.errorBody ||
+                DefaultErrorBodyTemplate,
+              successTitle:
+                monitor.notification.template?.successTitle ||
+                DefaultSuccessTemplate,
+              successBody:
+                monitor.notification.template?.successBody ||
+                DefaultWarningTemplate
+            }
+          }
+        : null
     });
     setViewMode("edit");
+  };
+
+  const prepareNotificationForPayload = (
+    notification: Notification | null | undefined
+  ) => {
+    if (!notification || !notification.enabled) return null;
+
+    return {
+      ...notification,
+      template: {
+        errorTitle:
+          notification.template?.errorTitle || DefaultErrorHeaderTemplate,
+        errorBody: notification.template?.errorBody || DefaultErrorBodyTemplate,
+        successTitle:
+          notification.template?.successTitle || DefaultSuccessTemplate,
+        successBody:
+          notification.template?.successBody || DefaultWarningTemplate
+      }
+    };
   };
 
   const handleCreate = async () => {
@@ -113,7 +158,8 @@ export default function Home() {
     try {
       const payload = {
         ...form,
-        headers: sanitizeHeaders(form.headers)
+        headers: sanitizeHeaders(form.headers),
+        notification: prepareNotificationForPayload(form.notification)
       };
 
       const [code, response] = await PostRequest("monitor", payload);
@@ -154,7 +200,8 @@ export default function Home() {
     try {
       const payload = {
         ...form,
-        headers: sanitizeHeaders(form.headers)
+        headers: sanitizeHeaders(form.headers),
+        notification: prepareNotificationForPayload(form.notification)
       };
 
       const [code, response] = await PutRequest(

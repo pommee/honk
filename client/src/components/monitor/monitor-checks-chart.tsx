@@ -109,6 +109,7 @@ export function MonitorChecksChart({
   const chartData = currentChecks.map((check, idx) => ({
     id: `#${startIndex + idx + 1}`,
     responseTimeMs: check.responseTimeMs || 0,
+    notificationSent: check.notificationSent,
     success: check.success,
     result: check.result || "",
     created: check.created,
@@ -288,19 +289,31 @@ export function MonitorChecksChart({
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Timestamp</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(selectedCheck.created).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: false
-                      })}
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Timestamp</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(selectedCheck.created).toLocaleString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: false
+                          }
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1 text-sm">
+                      <p className="text-right font-medium">Notified</p>
+                      <p className="text-right text-muted-foreground">
+                        {String(selectedCheck.notificationSent)}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

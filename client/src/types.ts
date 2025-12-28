@@ -40,6 +40,20 @@ interface Notification {
   type: "webhook" | "email";
   webhook: string;
   email: string;
+  template: Template;
+}
+
+export const DefaultErrorHeaderTemplate = "{{.Name}} is down";
+export const DefaultErrorBodyTemplate =
+  "The goose encountered an issue while contacting {{.Name}} at {{.Timestamp}}";
+export const DefaultSuccessTemplate = "{{.Name}} is back online";
+export const DefaultWarningTemplate =
+  "Good news! {{.Name}} has recovered and is responding normally.";
+interface Template {
+  errorTitle: string;
+  errorBody: string;
+  successTitle: string;
+  successBody: string;
 }
 
 export interface Check {
@@ -47,6 +61,7 @@ export interface Check {
   success: boolean;
   result: string;
   responseTimeMs: number;
+  notificationSent: boolean;
 }
 
 export interface Monitor {

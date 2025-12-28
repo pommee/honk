@@ -4,12 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { MonitorForm } from "@/types";
+import {
+  DefaultErrorBodyTemplate,
+  DefaultErrorHeaderTemplate,
+  DefaultSuccessTemplate,
+  DefaultWarningTemplate,
+  MonitorForm
+} from "@/types";
 import { ContainerConfig } from "./monitors/ContainerMonitor";
 import { HttpConfig } from "./monitors/HttpMonitor";
 import { PingConfig } from "./monitors/PingMonitor";
 import { TcpConfig } from "./monitors/TcpMonitor";
 import { XIcon } from "@phosphor-icons/react";
+import { Textarea } from "../ui/textarea";
 
 interface MonitorFormPanelProps {
   form: MonitorForm;
@@ -31,6 +38,13 @@ export function MonitorFormPanel({
   mode
 }: MonitorFormPanelProps) {
   const isCreateMode = mode === "create";
+
+  const getInitialNotificationTemplate = () => ({
+    errorTitle: DefaultErrorHeaderTemplate,
+    errorBody: DefaultErrorBodyTemplate,
+    successTitle: DefaultSuccessTemplate,
+    successBody: DefaultWarningTemplate
+  });
 
   const getPlaceholder = () => {
     switch (form.connectionType) {
@@ -278,7 +292,10 @@ export function MonitorFormPanel({
                             enabled: true,
                             type: prev.notification?.type || "webhook",
                             webhook: prev.notification?.webhook || "",
-                            email: prev.notification?.email || ""
+                            email: prev.notification?.email || "",
+                            template:
+                              prev.notification?.template ||
+                              getInitialNotificationTemplate()
                           }
                         : { enabled: false }
                     }))
@@ -365,6 +382,139 @@ export function MonitorFormPanel({
                     </p>
                   </div>
                 )}
+                <div className="space-y-4">
+                  <Label>Message Templates</Label>
+                  <p className="text-muted-foreground text-sm">
+                    Customize notification messages using template variables
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="error-title">Error Alert - Title</Label>
+                    <Input
+                      id="error-title"
+                      value={
+                        notification.template?.errorTitle || "{{.Name}} is down"
+                      }
+                      onChange={(e) =>
+                        handleFormChange((prev) => ({
+                          ...prev,
+                          notification: {
+                            ...prev.notification!,
+                            template: {
+                              errorTitle: e.target.value,
+                              errorBody:
+                                prev.notification?.template?.errorBody ||
+                                DefaultErrorBodyTemplate,
+                              successTitle:
+                                prev.notification?.template?.successTitle ||
+                                DefaultSuccessTemplate,
+                              successBody:
+                                prev.notification?.template?.successBody ||
+                                DefaultWarningTemplate
+                            }
+                          }
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="error-body">Error Alert - Body</Label>
+                    <Textarea
+                      id="error-body"
+                      value={
+                        notification.template?.errorBody ||
+                        "The goose encountered an issue while contacting {{.Name}} at {{.Timestamp}}"
+                      }
+                      onChange={(e) =>
+                        handleFormChange((prev) => ({
+                          ...prev,
+                          notification: {
+                            ...prev.notification!,
+                            template: {
+                              errorTitle:
+                                prev.notification?.template?.errorTitle ||
+                                DefaultErrorHeaderTemplate,
+                              errorBody: e.target.value,
+                              successTitle:
+                                prev.notification?.template?.successTitle ||
+                                DefaultSuccessTemplate,
+                              successBody:
+                                prev.notification?.template?.successBody ||
+                                DefaultWarningTemplate
+                            }
+                          }
+                        }))
+                      }
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="success-title">
+                      Recovery Alert - Title
+                    </Label>
+                    <Input
+                      id="success-title"
+                      value={
+                        notification.template?.successTitle ||
+                        "{{.Name}} is back online"
+                      }
+                      onChange={(e) =>
+                        handleFormChange((prev) => ({
+                          ...prev,
+                          notification: {
+                            ...prev.notification!,
+                            template: {
+                              errorTitle:
+                                prev.notification?.template?.errorTitle ||
+                                DefaultErrorHeaderTemplate,
+                              errorBody:
+                                prev.notification?.template?.errorBody ||
+                                DefaultErrorBodyTemplate,
+                              successTitle: e.target.value,
+                              successBody:
+                                prev.notification?.template?.successBody ||
+                                DefaultWarningTemplate
+                            }
+                          }
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <Label htmlFor="success-body">Recovery Alert - Body</Label>
+                  <div className="space-y-2">
+                    <Textarea
+                      id="success-body"
+                      value={
+                        notification.template?.successBody ||
+                        "Good news! {{.Name}} has recovered and is responding normally."
+                      }
+                      onChange={(e) =>
+                        handleFormChange((prev) => ({
+                          ...prev,
+                          notification: {
+                            ...prev.notification!,
+                            template: {
+                              errorTitle:
+                                prev.notification?.template?.errorTitle ||
+                                DefaultErrorHeaderTemplate,
+                              errorBody:
+                                prev.notification?.template?.errorBody ||
+                                DefaultErrorBodyTemplate,
+                              successTitle:
+                                prev.notification?.template?.successTitle ||
+                                DefaultSuccessTemplate,
+                              successBody: e.target.value
+                            }
+                          }
+                        }))
+                      }
+                      rows={3}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>

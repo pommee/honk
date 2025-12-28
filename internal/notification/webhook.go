@@ -41,6 +41,10 @@ func (w *WebhookNotifier) Send(msg Message) error {
 		msg.Timestamp = time.Now()
 	}
 
+	if err := msg.RenderTemplate(); err != nil {
+		return fmt.Errorf("failed to render template: %w", err)
+	}
+
 	payload, err := w.Builder.Build(msg)
 	if err != nil {
 		return err

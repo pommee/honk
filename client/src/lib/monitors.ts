@@ -7,7 +7,8 @@ export function mapApiMonitor(apiMonitor: Monitor): Monitor {
       success: c.success,
       result: c.result || "",
       created: c.created,
-      responseTimeMs: c.responseTimeMs
+      responseTimeMs: c.responseTimeMs,
+      notificationSent: c.notificationSent
     }))
   };
 }

@@ -37,12 +37,13 @@ type Monitor struct {
 }
 
 type MonitorCheck struct {
-	ID             uint      `gorm:"primaryKey;autoIncrement" json:"-"`
-	MonitorID      uint      `gorm:"index;not null" json:"-"`
-	Created        time.Time `json:"created"`
-	Success        bool      `json:"success"`
-	Result         string    `json:"result"`
-	ResponseTimeMs int64     `json:"responseTimeMs"`
+	ID               uint      `gorm:"primaryKey;autoIncrement" json:"-"`
+	MonitorID        uint      `gorm:"index;not null" json:"-"`
+	Created          time.Time `json:"created"`
+	Success          bool      `json:"success"`
+	Result           string    `json:"result"`
+	ResponseTimeMs   int64     `json:"responseTimeMs"`
+	NotificationSent bool      `json:"notificationSent"`
 
 	Monitor Monitor `gorm:"foreignKey:MonitorID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 }
@@ -54,6 +55,14 @@ type Notification struct {
 	Type      string `json:"type"`
 	Webhook   string `json:"webhook"`
 	Email     string `json:"email"`
+	Template  `json:"template"`
+}
+
+type Template struct {
+	ErrorTitle   string `json:"errorTitle"`
+	ErrorBody    string `json:"errorBody"`
+	SuccessTitle string `json:"successTitle"`
+	SuccessBody  string `json:"successBody"`
 }
 
 type HttpMonitorHeader struct {
