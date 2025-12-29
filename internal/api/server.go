@@ -35,9 +35,13 @@ type API struct {
 	Port           int
 
 	Manager *monitor.Manager
+
+	version, commit, date string
 }
 
-func (api *API) Start(content embed.FS, errorChannel chan struct{}) {
+func (api *API) Start(content embed.FS, errorChannel chan struct{}, version, commit, date string) {
+	api.version, api.commit, api.date = version, commit, date
+
 	api.initializeRouter()
 	api.configureCORS()
 	api.setupRoutes()
@@ -82,6 +86,7 @@ func (api *API) configureCORS() {
 }
 
 func (api *API) setupRoutes() {
+	api.registerStatisticRoutes()
 	api.registerMonitorRoutes()
 	api.registerWebhookRoutes()
 }

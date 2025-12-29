@@ -7,8 +7,12 @@ import (
 	"honk/internal/monitor"
 )
 
-//go:embed client/dist/*
-var content embed.FS
+var (
+	version, commit, date string
+
+	//go:embed client/dist/*
+	content embed.FS
+)
 
 func main() {
 	db := database.Initialize()
@@ -28,5 +32,5 @@ func main() {
 	manager.RegisterHandler(database.ConnectionTypeTCP, monitor.NewTCPPingHandler(5))
 	manager.Start()
 
-	apiServer.Start(content, errorChan)
+	apiServer.Start(content, errorChan, version, commit, date)
 }

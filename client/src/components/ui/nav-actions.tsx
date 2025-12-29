@@ -22,8 +22,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from "@/components/ui/sidebar";
-import { DotsThreeOutlineIcon } from "@phosphor-icons/react";
-import { JSX, useState } from "react";
+import { GetRequest } from "@/util";
+import { DotsThreeOutlineIcon, GithubLogoIcon } from "@phosphor-icons/react";
+import { JSX, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const data = [
   [
@@ -34,21 +36,28 @@ const data = [
   ]
 ];
 
+interface Info {
+  version: string;
+  commit: string;
+  date: string;
+}
+
 function AboutDialog() {
-  //   const [responseData, setResponseData] = useState<Metrics>();
+  const [info, setInfo] = useState<Info | null>(null);
 
-  //   useEffect(() => {
-  //     async function fetchData() {
-  //       try {
-  //         const [, data] = await GetRequest("server");
-  //         setResponseData(data);
-  //       } catch {
-  //         return;
-  //       }
-  //     }
+  useEffect(() => {
+    async function fetchData() {
+      const [code, data] = await GetRequest("info");
 
-  //     fetchData();
-  //   }, []);
+      if (code !== 200) {
+        toast.error("Could not fetch server info");
+      }
+
+      setInfo(data);
+    }
+
+    fetchData();
+  }, []);
 
   return (
     <DialogContent className="w-1/2">
@@ -61,6 +70,45 @@ function AboutDialog() {
         width={100}
         className="mx-auto"
       />
+      {info && (
+        <div className="flex gap-4">
+          <div className="text-muted-foreground">
+            <p>Version:</p>
+            <p>Commit:</p>
+            <p>Built:</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <a
+              href={`https://github.com/pommee/honk/releases/tag/${info.version}`}
+              target="#"
+              className="text-blue-400 underline"
+            >
+              {info.version}
+            </a>
+            <a
+              href={`https://github.com/pommee/honk/commit/${info.commit}`}
+              target="#"
+              className="text-blue-400 underline"
+            >
+              {info.commit}
+            </a>
+            <p>
+              {new Date(info.date).toLocaleString("en-US", { hour12: false })}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <GithubLogoIcon className="mt-1" />
+        <a
+          href={"https://github.com/pommee/honk"}
+          target="#"
+          className="text-blue-400 underline"
+        >
+          https://github.com/pommee/honk
+        </a>
+      </div>
     </DialogContent>
   );
 }
