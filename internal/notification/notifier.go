@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-const (
-	DefaultErrorHeaderTemplate = "{{.Name}} is down"
-	DefaultErrorBodyTemplate   = "The goose encountered an issue while contacting {{.Name}} at {{.Timestamp}}"
-	DefaultSuccessTemplate     = "{{.Name}} is back online"
-	DefaultWarningTemplate     = "Good news! {{.Name}} has recovered and is responding normally."
-)
-
 type MessageTemplate struct {
 	Title string
 	Body  string

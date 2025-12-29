@@ -17,6 +17,7 @@ import { PingConfig } from "./monitors/PingMonitor";
 import { TcpConfig } from "./monitors/TcpMonitor";
 import { XIcon } from "@phosphor-icons/react";
 import { Textarea } from "../ui/textarea";
+import { PostRequest } from "@/util";
 
 interface MonitorFormPanelProps {
   form: MonitorForm;
@@ -124,6 +125,26 @@ export function MonitorFormPanel({
         return <ContainerConfig />;
       default:
         return null;
+    }
+  };
+
+  const handleTestCreateWebhook = async (type: "error" | "success") => {
+    const [code, response] = await PostRequest(
+      `webhook/test?type=${type}`,
+      {
+        name: form.name || "Test Monitor",
+        type: "webhook",
+        enabled: true,
+        status: "test",
+        message: "This is a test notification",
+        webhook: form.notification?.webhook,
+        template: form.notification?.template
+      },
+      false
+    );
+    if (code !== 200) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to create monitor");
     }
   };
 
@@ -338,26 +359,63 @@ export function MonitorFormPanel({
                 </div>
 
                 {notification.type === "webhook" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="monitor-webhook">Webhook URL</Label>
-                    <Input
-                      id="monitor-webhook"
-                      type="url"
-                      placeholder="https://discordapp.com/api/webhooks/..."
-                      value={notification.webhook || ""}
-                      onChange={(e) =>
-                        handleFormChange((prev) => ({
-                          ...prev,
-                          notification: {
-                            ...prev.notification!,
-                            webhook: e.target.value
-                          }
-                        }))
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      POST JSON payload will be sent on status changes.
-                    </p>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="monitor-webhook">Webhook URL</Label>
+                      <Input
+                        id="monitor-webhook"
+                        type="url"
+                        placeholder="https://discordapp.com/api/webhooks/..."
+                        value={notification.webhook || ""}
+                        onChange={(e) =>
+                          handleFormChange((prev) => ({
+                            ...prev,
+                            notification: {
+                              ...prev.notification!,
+                              webhook: e.target.value
+                            }
+                          }))
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        POST JSON payload will be sent on status changes.
+                      </p>
+                    </div>
+
+                    <div className="space-x-5">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={
+                          !notification.webhook?.trim() ||
+                          !notification.webhook.startsWith("http")
+                        }
+                        onClick={async () => {
+                          handleTestCreateWebhook("error");
+                        }}
+                      >
+                        Test Error
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={
+                          !notification.webhook?.trim() ||
+                          !notification.webhook.startsWith("http")
+                        }
+                        onClick={async () => {
+                          handleTestCreateWebhook("success");
+                        }}
+                      >
+                        Test Recovery
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sends a test payload to visualize how the message would
+                        appear
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-2">

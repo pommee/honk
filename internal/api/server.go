@@ -83,6 +83,7 @@ func (api *API) configureCORS() {
 
 func (api *API) setupRoutes() {
 	api.registerMonitorRoutes()
+	api.registerWebhookRoutes()
 }
 
 func (api *API) setupAuthAndMiddleware() {
